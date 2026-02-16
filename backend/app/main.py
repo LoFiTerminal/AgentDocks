@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import health, config, agent, verify, runs, project
 
@@ -16,6 +16,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# CSRF protection middleware
+@app.middleware("http")
+async def csrf_middleware(request: Request, call_next):
+    """Add SameSite=Strict to all cookies for CSRF protection."""
+    response = await call_next(request)
+
+    # Set SameSite=Strict on all cookies
+    if 'set-cookie' in response.headers:
+        cookies = response.headers.get_list('set-cookie')
+        response.headers._list = [
+            (k, v + '; SameSite=Strict' if k.lower() == 'set-cookie' else v)
+            for k, v in response.headers._list
+        ]
+
+    return response
 
 # Include routers
 app.include_router(health.router)

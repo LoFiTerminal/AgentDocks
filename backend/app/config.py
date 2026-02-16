@@ -3,6 +3,7 @@
 from models.schemas import OnboardingConfig
 from typing import Optional
 import json
+import os
 from pathlib import Path
 
 # Storage location
@@ -22,6 +23,9 @@ def save_config(config: OnboardingConfig) -> OnboardingConfig:
         CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config.model_dump(), f, indent=2)
+
+        # Set secure file permissions (owner read/write only)
+        os.chmod(CONFIG_FILE, 0o600)
     except Exception as e:
         print(f"Warning: Failed to persist config to disk: {e}")
 

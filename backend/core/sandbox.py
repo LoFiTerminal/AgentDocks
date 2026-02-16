@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Optional, Dict, Any
 import asyncio
 import os
+import shlex
 
 
 class BaseSandbox(ABC):
@@ -139,7 +140,7 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
-        stdout, _, _ = await self.execute_bash(f"ls -1 {directory}")
+        stdout, _, _ = await self.execute_bash(f"ls -1 {shlex.quote(directory)}")
         return [f.strip() for f in stdout.split('\n') if f.strip()]
 
     async def upload_file(self, name: str, content: bytes) -> str:
@@ -200,10 +201,10 @@ class E2BSandbox(BaseSandbox):
                         b64_content = base64.b64encode(content_bytes).decode('ascii')
                         # Create directory if needed
                         dest_dir = str(Path(dest_path).parent)
-                        await self.sandbox.run_code(f"mkdir -p '{dest_dir}'", language="bash")
+                        await self.sandbox.run_code(f"mkdir -p {shlex.quote(dest_dir)}", language="bash")
                         # Write using base64
                         await self.sandbox.run_code(
-                            f"echo '{b64_content}' | base64 -d > '{dest_path}'",
+                            f"echo {shlex.quote(b64_content)} | base64 -d > {shlex.quote(dest_path)}",
                             language="bash"
                         )
                 except Exception as e:
@@ -219,7 +220,7 @@ class E2BSandbox(BaseSandbox):
 
         # Use find command to list all files
         stdout, _, _ = await self.execute_bash(
-            f"find {path} -type f -o -type d | head -1000"
+            f"find {shlex.quote(path)} -type f -o -type d | head -1000"
         )
 
         files = []
@@ -228,14 +229,17 @@ class E2BSandbox(BaseSandbox):
             if not line or line == path:
                 continue
 
+            # Quote line for use in shell commands
+            line_quoted = shlex.quote(line)
+
             # Determine type
-            is_file_stdout, _, is_file_code = await self.execute_bash(f"test -f {line} && echo 'file' || echo 'dir'")
+            is_file_stdout, _, is_file_code = await self.execute_bash(f"test -f {line_quoted} && echo 'file' || echo 'dir'")
             file_type = 'file' if 'file' in is_file_stdout else 'directory'
 
             # Get size if it's a file
             size = None
             if file_type == 'file':
-                size_stdout, _, _ = await self.execute_bash(f"stat -f%z {line} 2>/dev/null || stat -c%s {line} 2>/dev/null")
+                size_stdout, _, _ = await self.execute_bash(f"stat -f%z {line_quoted} 2>/dev/null || stat -c%s {line_quoted} 2>/dev/null")
                 try:
                     size = int(size_stdout.strip())
                 except:
@@ -254,7 +258,8 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
-        stdout, _, code = await self.execute_bash(f"sha256sum {path} 2>/dev/null || shasum -a 256 {path}")
+        path_quoted = shlex.quote(path)
+        stdout, _, code = await self.execute_bash(f"sha256sum {path_quoted} 2>/dev/null || shasum -a 256 {path_quoted}")
         if code == 0 and stdout:
             # sha256sum outputs: hash filename
             return stdout.split()[0]
@@ -293,18 +298,21 @@ class DockerSandbox(BaseSandbox):
         if not self.container:
             raise RuntimeError("Container not initialized")
 
+        # Escape single quotes in command for safe shell execution
+        escaped_command = command.replace("'", "'\"'\"'")
+
         # Run in thread pool since docker-py is blocking
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
             lambda: self.container.exec_run(
-                f'/bin/bash -c "{command}"',
+                f"/bin/bash -c '{escaped_command}'",
                 workdir="/workspace"
             )
         )
 
         exit_code = result.exit_code
-        output = result.output.decode('utf-8')
+        output = result.output.decode('utf-8', errors='replace')
 
         # Split stdout/stderr (simplified - docker combines them)
         if exit_code == 0:
@@ -356,7 +364,7 @@ class DockerSandbox(BaseSandbox):
 
     async def list_files(self, directory: str = ".") -> List[str]:
         """List files in Docker container."""
-        stdout, _, _ = await self.execute_bash(f"ls -1 {directory}")
+        stdout, _, _ = await self.execute_bash(f"ls -1 {shlex.quote(directory)}")
         return [f.strip() for f in stdout.split('\n') if f.strip()]
 
     async def upload_file(self, name: str, content: bytes) -> str:
@@ -431,7 +439,7 @@ class DockerSandbox(BaseSandbox):
 
         # Use find command
         stdout, _, _ = await self.execute_bash(
-            f"find {path} -type f -o -type d | head -1000"
+            f"find {shlex.quote(path)} -type f -o -type d | head -1000"
         )
 
         files = []
@@ -440,14 +448,17 @@ class DockerSandbox(BaseSandbox):
             if not line or line == path:
                 continue
 
+            # Quote line for use in shell commands
+            line_quoted = shlex.quote(line)
+
             # Determine type
-            is_file_stdout, _, _ = await self.execute_bash(f"test -f {line} && echo 'file' || echo 'dir'")
+            is_file_stdout, _, _ = await self.execute_bash(f"test -f {line_quoted} && echo 'file' || echo 'dir'")
             file_type = 'file' if 'file' in is_file_stdout else 'directory'
 
             # Get size if file
             size = None
             if file_type == 'file':
-                size_stdout, _, _ = await self.execute_bash(f"stat -c%s {line} 2>/dev/null")
+                size_stdout, _, _ = await self.execute_bash(f"stat -c%s {line_quoted} 2>/dev/null")
                 try:
                     size = int(size_stdout.strip())
                 except:
@@ -466,7 +477,8 @@ class DockerSandbox(BaseSandbox):
         if not self.container:
             raise RuntimeError("Container not initialized")
 
-        stdout, _, code = await self.execute_bash(f"sha256sum {path} 2>/dev/null")
+        path_quoted = shlex.quote(path)
+        stdout, _, code = await self.execute_bash(f"sha256sum {path_quoted} 2>/dev/null")
         if code == 0 and stdout:
             return stdout.split()[0]
         return ""

@@ -2,6 +2,7 @@
 
 from typing import AsyncGenerator, Dict, Any, List
 import json
+import shlex
 from .providers import create_provider
 from .sandbox import create_sandbox
 from .tools import TOOLS
@@ -308,9 +309,9 @@ class AgentRunner:
             pattern = tool_input["pattern"]
             directory = tool_input.get("directory", ".")
 
-            # Use bash to run glob
+            # Use bash to run glob with proper escaping
             stdout, _, _ = await sandbox.execute_bash(
-                f"find {directory} -name '{pattern}' 2>/dev/null"
+                f"find {shlex.quote(directory)} -name {shlex.quote(pattern)} 2>/dev/null"
             )
             files = [f.strip() for f in stdout.split('\n') if f.strip()]
             return {"files": files}
@@ -319,9 +320,9 @@ class AgentRunner:
             pattern = tool_input["pattern"]
             path = tool_input.get("path", ".")
 
-            # Use bash grep
+            # Use bash grep with proper escaping
             stdout, _, exit_code = await sandbox.execute_bash(
-                f"grep -r '{pattern}' {path} 2>/dev/null || true"
+                f"grep -r {shlex.quote(pattern)} {shlex.quote(path)} 2>/dev/null || true"
             )
             return {"matches": stdout}
 

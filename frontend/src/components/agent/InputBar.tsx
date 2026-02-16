@@ -43,9 +43,36 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    if (!e.target.files) return;
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_FILES = 20;
+
+    const newFiles = Array.from(e.target.files);
+
+    // Validate individual file sizes
+    const oversizedFiles = newFiles.filter(f => f.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      alert(`Some files are too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
     }
+
+    // Validate total files count
+    if (files.length + newFiles.length > MAX_FILES) {
+      alert(`Too many files (max ${MAX_FILES})`);
+      return;
+    }
+
+    // Validate total size
+    const currentSize = files.reduce((sum, f) => sum + f.size, 0);
+    const newSize = newFiles.reduce((sum, f) => sum + f.size, 0);
+    if (currentSize + newSize > MAX_TOTAL_SIZE) {
+      alert(`Total file size too large (max ${MAX_TOTAL_SIZE / 1024 / 1024}MB)`);
+      return;
+    }
+
+    setFiles(prev => [...prev, ...newFiles]);
   };
 
   const removeFile = (index: number) => {
