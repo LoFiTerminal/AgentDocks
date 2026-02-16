@@ -103,13 +103,13 @@ export function WorkflowSelector({ workflows, onRunWorkflow, isRunning }: Workfl
         >
           {isRunning ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Running Workflow...
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Running...</span>
             </>
           ) : (
             <>
-              <Play className="w-4 h-4" />
-              Start Workflow
+              <Play className="w-3 h-3" />
+              <span>Start Workflow</span>
             </>
           )}
         </button>

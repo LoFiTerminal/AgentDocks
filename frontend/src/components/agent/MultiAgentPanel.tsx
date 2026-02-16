@@ -319,17 +319,27 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                     className="space-y-3"
                   >
                     <div className="bg-secondary/30 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle2 className={`w-5 h-5 ${
-                          workflowResult.final_decision === 'APPROVED' ? 'text-green-400' :
-                          workflowResult.final_decision === 'REJECTED' ? 'text-red-400' :
-                          'text-yellow-400'
-                        }`} />
-                        <span className="font-semibold">Decision: {workflowResult.final_decision}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className={`w-5 h-5 ${
+                            workflowResult.final_decision === 'APPROVED' ? 'text-green-400' :
+                            workflowResult.final_decision === 'REJECTED' ? 'text-red-400' :
+                            'text-yellow-400'
+                          }`} />
+                          <span className="font-semibold">Decision: {workflowResult.final_decision}</span>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mb-3">
                         Task: {workflowResult.task}
                       </p>
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2 text-xs">
+                        <strong>💡 How to use this code:</strong>
+                        <ol className="list-decimal list-inside mt-1 space-y-1">
+                          <li>Copy the code below from the "Coder" section</li>
+                          <li>Paste it into your project (e.g., calculator.js)</li>
+                          <li>Run it in your environment (Node.js, browser console, etc.)</li>
+                        </ol>
+                      </div>
                     </div>
 
                     {workflowResult.steps?.map((step: any, idx: number) => (
