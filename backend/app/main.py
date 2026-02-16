@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import health, config, agent, verify, runs, project
+from app.api import health, config, agent, verify, runs, project, multi_agent
 
 app = FastAPI(
     title="AgentDocks API",
@@ -40,3 +40,4 @@ app.include_router(verify.router)
 app.include_router(runs.router)
 app.include_router(agent.router)
 app.include_router(project.router)
+app.include_router(multi_agent.router)

@@ -87,3 +87,47 @@ class ApplyChangesRequest(BaseModel):
     """Request to apply changes to local filesystem"""
     approved_changes: List[str]  # List of file paths to apply
     create_backup: bool = True
+
+# Multi-Agent schemas
+class MultiAgentRunRequest(BaseModel):
+    """Request to run multi-agent workflow"""
+    task: str
+    workflow: Literal["feature", "debug", "refactor"] = "feature"
+    context: Optional[Dict[str, Any]] = None
+    model: Optional[str] = None
+
+class AgentStatusInfo(BaseModel):
+    """Agent status information"""
+    agent_id: str
+    role: str
+    status: str  # idle, thinking, working, waiting, done, error
+    current_task: Optional[str] = None
+    progress: Optional[str] = None
+
+class AgentMessage(BaseModel):
+    """Inter-agent message"""
+    from_agent: str
+    to_agent: str
+    message_type: str
+    content: Any
+    timestamp: str
+
+class MultiAgentStatusResponse(BaseModel):
+    """Multi-agent system status"""
+    agents: List[AgentStatusInfo]
+    total_agents: int
+    active_agents: int
+
+class MultiAgentMessagesResponse(BaseModel):
+    """Inter-agent communication history"""
+    messages: List[AgentMessage]
+    total_messages: int
+
+class MultiAgentResultResponse(BaseModel):
+    """Multi-agent workflow result"""
+    task: str
+    workflow: str
+    success: bool
+    final_decision: Optional[str] = None
+    steps: List[Dict[str, Any]]
+    error: Optional[str] = None
