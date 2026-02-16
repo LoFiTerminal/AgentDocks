@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 export const AnimatedTagline = () => {
-  const insecureText = "Someone's Cloud";
+  const insecureText = "On Their Servers";
   const secureText = "On Your Machine";
   const [displayText, setDisplayText] = useState(insecureText);
   const [isTransitioning, setIsTransitioning] = useState(false);
