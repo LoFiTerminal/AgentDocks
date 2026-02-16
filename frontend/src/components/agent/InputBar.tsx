@@ -15,6 +15,7 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
   const [query, setQuery] = useState(initialQuery);
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Update query when initialQuery changes
   useEffect(() => {
@@ -22,6 +23,15 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
       setQuery(initialQuery);
     }
   }, [initialQuery]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+  }, [query]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +102,7 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
           {/* Text input */}
           <div className="flex-1">
             <textarea
+              ref={textareaRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -104,12 +115,13 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
               disabled={isRunning}
               rows={1}
               className={clsx(
-                'w-full px-4 py-3 rounded-lg resize-none',
+                'w-full px-4 py-3 rounded-lg resize-y',
                 'bg-secondary border-2 border-border',
                 'text-foreground placeholder:text-muted-foreground',
                 'focus:outline-none focus:border-[#F59E0B]',
                 'transition-colors',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'max-h-[200px] overflow-y-auto'
               )}
             />
           </div>

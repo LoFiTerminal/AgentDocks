@@ -2,24 +2,9 @@
 
 from fastapi import APIRouter, HTTPException
 from models.schemas import OnboardingConfig
-from typing import Optional
+from app.config import save_config, get_config
 
 router = APIRouter(prefix="/api/config", tags=["config"])
-
-# In-memory storage for demo (replace with database in production)
-_config_storage: Optional[OnboardingConfig] = None
-
-
-def save_config(config: OnboardingConfig) -> OnboardingConfig:
-    """Save configuration to storage."""
-    global _config_storage
-    _config_storage = config
-    return config
-
-
-def get_config() -> Optional[OnboardingConfig]:
-    """Get current configuration."""
-    return _config_storage
 
 
 @router.post("")
