@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { AnimatedTerminal } from '@/components/AnimatedTerminal';
+import { AnimatedTagline } from '@/components/AnimatedTagline';
 import { Check, ChevronDown, Github } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -46,7 +47,7 @@ export const HeroSection = () => {
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight">
               <span className="gradient-text">AI Agents That Run</span>
               <br />
-              <span className="text-foreground">On Your Machine</span>
+              <AnimatedTagline />
             </h1>
 
             {/* Subtitle */}
