@@ -54,9 +54,9 @@ class E2BSandbox(BaseSandbox):
 
     async def __aenter__(self):
         """Async context manager entry."""
-        from e2b_code_interpreter import AsyncCodeInterpreter
+        from e2b_code_interpreter import AsyncSandbox
 
-        self.sandbox = await AsyncCodeInterpreter.create(api_key=self.api_key)
+        self.sandbox = await AsyncSandbox.create(api_key=self.api_key)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -68,9 +68,21 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
-        result = await self.sandbox.notebook.exec_cell(f"!{command}")
-        stdout = "".join([out.text for out in result.results if hasattr(out, 'text')])
-        stderr = result.error.value if result.error else ""
+        # Run bash command using run_code with bash language
+        result = await self.sandbox.run_code(command, language="bash")
+
+        # Collect stdout from results
+        stdout_parts = []
+        stderr_parts = []
+
+        for output in result.logs.stdout:
+            stdout_parts.append(output)
+
+        for output in result.logs.stderr:
+            stderr_parts.append(output)
+
+        stdout = "".join(stdout_parts)
+        stderr = "".join(stderr_parts)
         exit_code = 1 if result.error else 0
 
         return stdout, stderr, exit_code
@@ -81,7 +93,7 @@ class E2BSandbox(BaseSandbox):
             raise RuntimeError("Sandbox not initialized")
 
         try:
-            await self.sandbox.filesystem.write(path, content)
+            await self.sandbox.files.write(path, content)
             return True
         except Exception as e:
             print(f"Error writing file: {e}")
@@ -92,7 +104,7 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
-        content = await self.sandbox.filesystem.read(path)
+        content = await self.sandbox.files.read(path)
         return content
 
     async def list_files(self, directory: str = ".") -> List[str]:
@@ -117,7 +129,7 @@ class E2BSandbox(BaseSandbox):
     async def destroy(self) -> None:
         """Destroy E2B sandbox."""
         if self.sandbox:
-            await self.sandbox.close()
+            await self.sandbox.kill()
             self.sandbox = None
 
 
