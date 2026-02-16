@@ -127,3 +127,108 @@ async def close_project():
         save_config(config)
 
     return {"success": True}
+
+@router.get("/tree")
+async def get_project_tree():
+    """Get file tree of current project in sandbox."""
+    global _active_project_manager
+
+    if not _active_project_manager:
+        raise HTTPException(
+            status_code=400,
+            detail="No active project in sandbox. Run an agent task first to sync the project."
+        )
+
+    try:
+        tree = await _active_project_manager.build_file_tree()
+        return tree
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to build file tree: {str(e)}")
+
+@router.get("/file")
+async def get_project_file(path: str):
+    """Read a file from the sandbox project."""
+    global _active_project_manager
+
+    if not _active_project_manager:
+        raise HTTPException(
+            status_code=400,
+            detail="No active project in sandbox. Run an agent task first."
+        )
+
+    # Validate path (prevent directory traversal)
+    if '..' in path or path.startswith('/'):
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    try:
+        full_path = f"/workspace/{path}"
+        content = await _active_project_manager.sandbox.read_file(full_path)
+        return {"path": path, "content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+
+@router.get("/changes")
+async def get_project_changes():
+    """Detect and return all changes in the sandbox."""
+    global _active_project_manager
+
+    if not _active_project_manager:
+        raise HTTPException(
+            status_code=400,
+            detail="No active project in sandbox"
+        )
+
+    try:
+        changes = await _active_project_manager.detect_changes()
+
+        return ProjectChanges(
+            changes=changes,
+            total_files=len(changes),
+            created_count=len([c for c in changes if c.type == 'created']),
+            modified_count=len([c for c in changes if c.type == 'modified']),
+            deleted_count=len([c for c in changes if c.type == 'deleted'])
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to detect changes: {str(e)}")
+
+@router.post("/apply-changes")
+async def apply_project_changes(request: ApplyChangesRequest):
+    """Apply approved changes to local filesystem."""
+    global _active_project_manager
+
+    if not _active_project_manager:
+        raise HTTPException(
+            status_code=400,
+            detail="No active project"
+        )
+
+    try:
+        # Get all changes
+        all_changes = await _active_project_manager.detect_changes()
+
+        # Filter to approved only
+        approved = [c for c in all_changes if c.path in request.approved_changes]
+
+        if not approved:
+            return {
+                "success": False,
+                "message": "No valid changes to apply",
+                "applied": [],
+                "failed": []
+            }
+
+        # Apply changes
+        result = await _active_project_manager.apply_changes(
+            approved,
+            create_backup_flag=request.create_backup
+        )
+
+        return {
+            "success": True,
+            "message": f"Applied {len(result['applied'])} changes",
+            "applied": result['applied'],
+            "failed": result['failed'],
+            "backup_path": result.get('backup_path')
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to apply changes: {str(e)}")

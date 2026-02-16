@@ -68,6 +68,35 @@ class AgentRunner:
             async with sandbox:
                 yield await stream_status("Sandbox ready!")
 
+                # Sync project if one is open
+                from app.config import get_config
+                from core.project_manager import ProjectManager
+                import app.api.project as project_api
+
+                config = get_config()
+                project_manager = None
+
+                if config and config.current_project:
+                    yield await stream_status("Loading project into sandbox...")
+                    try:
+                        project_path = config.current_project.project_path
+                        project_manager = ProjectManager(sandbox, project_path)
+
+                        # Copy project to sandbox
+                        success = await project_manager.copy_to_sandbox()
+                        if success:
+                            # Snapshot file hashes for change detection
+                            await project_manager.snapshot_hashes()
+
+                            # Store in global for API access
+                            project_api._active_project_manager = project_manager
+
+                            yield await stream_status(f"Project '{config.current_project.project_name}' loaded!")
+                        else:
+                            yield await stream_status("Warning: Failed to load project")
+                    except Exception as e:
+                        yield await stream_status(f"Warning: Failed to sync project: {str(e)}")
+
                 # Upload files if provided
                 if uploaded_files:
                     yield await stream_status(f"Uploading {len(uploaded_files)} files...")
