@@ -76,11 +76,16 @@ class Orchestrator:
 
         # Initialize sandbox if needed
         sandbox_initialized = False
+        print(f"🏗️  Initializing sandbox...")
         if hasattr(self.sandbox, '__aenter__'):
             await self.sandbox.__aenter__()
             sandbox_initialized = True
+            print(f"✅ Sandbox initialized successfully")
             # Ensure /workspace/ exists
             await self.sandbox.execute_bash("mkdir -p /workspace")
+            print(f"📁 Workspace directory created")
+        else:
+            print(f"⚠️  Sandbox doesn't support async context manager")
 
         try:
             # Step 1: Architecture Planning

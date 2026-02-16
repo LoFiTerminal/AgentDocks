@@ -41,6 +41,21 @@ export async function POST(
       body,
     });
 
+    // Check if response is SSE (streaming)
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('text/event-stream')) {
+      // Return streaming response as-is
+      return new Response(response.body, {
+        status: response.status,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Regular JSON response
     const data = await response.json();
     return Response.json(data, { status: response.status });
   } catch (error) {
