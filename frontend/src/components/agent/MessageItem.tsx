@@ -88,9 +88,25 @@ export const MessageItem = ({ message }: MessageItemProps) => {
     );
   }
 
-  // Text event (AI response)
+  // Text event (AI response or user message)
   if (type === 'text') {
-    const textData = data as { content: string };
+    const textData = data as { content: string; isUser?: boolean };
+
+    // User message - show on the right with different styling
+    if (textData.isUser) {
+      return (
+        <div className="animate-fade-in flex justify-end">
+          <div className="max-w-[80%] p-4 rounded-lg bg-[#F59E0B]/20 border border-[#F59E0B]/30">
+            <div className="text-sm font-semibold text-[#F59E0B] mb-1">You</div>
+            <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+              {textData.content}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // AI response
     return (
       <div className="animate-fade-in">
         <div className="flex items-start gap-3">

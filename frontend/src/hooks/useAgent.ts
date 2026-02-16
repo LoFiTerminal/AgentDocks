@@ -21,6 +21,15 @@ export const useAgent = () => {
     setError(null);
     setIsRunning(true);
 
+    // Add user's query as first message
+    const userMessage: AgentMessage = {
+      id: `user-${Date.now()}`,
+      type: 'text',
+      data: { content: query, isUser: true },
+      timestamp: Date.now(),
+    };
+    setMessages([userMessage]);
+
     try {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
@@ -89,6 +98,8 @@ export const useAgent = () => {
               try {
                 const jsonStr = line.slice(6); // Remove 'data: ' prefix
                 const event = JSON.parse(jsonStr);
+
+                console.log('📨 Received event:', event.type, event.data);
 
                 const message: AgentMessage = {
                   id: `${Date.now()}-${Math.random()}`,
