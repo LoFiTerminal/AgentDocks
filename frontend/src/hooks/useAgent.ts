@@ -71,41 +71,50 @@ export const useAgent = () => {
       let buffer = '';
 
       while (true) {
-        const { done, value } = await reader.read();
+        try {
+          const { done, value } = await reader.read();
 
-        if (done) {
-          break;
-        }
+          if (done) {
+            break;
+          }
 
-        buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE messages
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          // Process complete SSE messages
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6); // Remove 'data: ' prefix
-              const event = JSON.parse(jsonStr);
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6); // Remove 'data: ' prefix
+                const event = JSON.parse(jsonStr);
 
-              const message: AgentMessage = {
-                id: `${Date.now()}-${Math.random()}`,
-                type: event.type,
-                data: event.data,
-                timestamp: Date.now(),
-              };
+                const message: AgentMessage = {
+                  id: `${Date.now()}-${Math.random()}`,
+                  type: event.type,
+                  data: event.data,
+                  timestamp: Date.now(),
+                };
 
-              setMessages(prev => [...prev, message]);
+                setMessages(prev => [...prev, message]);
 
-              // Check if done
-              if (event.type === 'done') {
-                setIsRunning(false);
+                // Check if done
+                if (event.type === 'done') {
+                  setIsRunning(false);
+                }
+              } catch (e) {
+                console.error('Failed to parse SSE event:', e);
               }
-            } catch (e) {
-              console.error('Failed to parse SSE event:', e);
             }
           }
+        } catch (readError: any) {
+          // Handle read errors (including aborts)
+          if (readError.name === 'AbortError') {
+            console.log('Stream aborted by user');
+            break;
+          }
+          throw readError;
         }
       }
 
@@ -131,14 +140,21 @@ export const useAgent = () => {
   }, []);
 
   const stopAgent = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
+    try {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
 
-    if (readerRef.current) {
-      readerRef.current.cancel();
-      readerRef.current = null;
+      if (readerRef.current) {
+        readerRef.current.cancel().catch(() => {
+          // Ignore cancel errors
+        });
+        readerRef.current = null;
+      }
+    } catch (err) {
+      // Ignore abort errors
+      console.log('Agent stopped');
     }
 
     setIsRunning(false);
