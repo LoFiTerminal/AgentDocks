@@ -166,6 +166,7 @@ class E2BSandbox(BaseSandbox):
 
         from pathlib import Path
         from core.project_utils import should_ignore
+        import base64
 
         local = Path(local_path)
 
@@ -185,9 +186,26 @@ class E2BSandbox(BaseSandbox):
                 dest_path = f"{sandbox_path}/{rel_path}"
 
                 try:
-                    with open(file_path, 'r') as f:
-                        content = f.read()
-                    await self.sandbox.files.write(dest_path, content)
+                    # Always read as binary
+                    with open(file_path, 'rb') as f:
+                        content_bytes = f.read()
+
+                    # Try to decode as text, if fails keep as binary
+                    try:
+                        content_str = content_bytes.decode('utf-8')
+                        await self.sandbox.files.write(dest_path, content_str)
+                    except UnicodeDecodeError:
+                        # Binary file - write using base64 encoding workaround
+                        # E2B files.write only accepts strings, so we create via bash
+                        b64_content = base64.b64encode(content_bytes).decode('ascii')
+                        # Create directory if needed
+                        dest_dir = str(Path(dest_path).parent)
+                        await self.sandbox.run_code(f"mkdir -p '{dest_dir}'", language="bash")
+                        # Write using base64
+                        await self.sandbox.run_code(
+                            f"echo '{b64_content}' | base64 -d > '{dest_path}'",
+                            language="bash"
+                        )
                 except Exception as e:
                     print(f"Warning: Failed to copy {rel_path}: {e}")
                     continue
