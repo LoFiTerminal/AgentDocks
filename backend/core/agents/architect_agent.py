@@ -59,15 +59,15 @@ Output format:
                 "role": "user",
                 "content": f"""Task: {task}
 
-Analyze this task and create a comprehensive architecture plan.
+Create an implementation plan for this task.
 
-Include:
-1. Architecture Overview
-2. File Structure
-3. API Design (if applicable)
-4. Implementation Steps (for Coder agent)
-5. Testing Strategy (for Tester agent)
-6. Potential Risks
+For new code/features:
+1. What needs to be created (functions, classes, etc.)
+2. What the code should do (clear requirements)
+3. How it should be structured
+4. Key implementation steps for the Coder
+
+Keep it focused and practical. The Coder needs clear direction on what to write.
 
 Current context:
 {self.context}

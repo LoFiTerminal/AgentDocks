@@ -71,11 +71,20 @@ When you receive a plan from the Architect:
                 "role": "user",
                 "content": f"""Task: {task}
 
-{plan_section}Implement this feature. Follow these steps:
-1. Read relevant existing files
-2. Implement the required changes
+{plan_section}Your job is to WRITE CODE to complete this task.
+
+If this is a new feature/function:
+1. Write complete, working code
+2. Include all necessary functions
+3. Add comments explaining usage
+4. Make it ready to copy and use
+
+If modifying existing code:
+1. Read the existing files first
+2. Make the changes
 3. Test your implementation
-4. Report what you've done
+
+Write the actual code now. Don't just explore or plan.
 
 Context:
 {self.context}
