@@ -10,6 +10,7 @@ interface AgentConsoleProps {
   onExampleClick: (prompt: string) => void;
   onShare?: () => void;
   canShare?: boolean;
+  isRunning?: boolean;
 }
 
 const EXAMPLE_PROMPTS = [
@@ -18,13 +19,28 @@ const EXAMPLE_PROMPTS = [
   'Create a React landing page',
 ];
 
-export const AgentConsole = ({ messages, onExampleClick, onShare, canShare }: AgentConsoleProps) => {
+export const AgentConsole = ({ messages, onExampleClick, onShare, canShare, isRunning }: AgentConsoleProps) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Loading state - agent is starting but no messages yet
+  if (messages.length === 0 && isRunning) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground animate-fade-in">
+            <div className="w-5 h-5 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />
+            <span className="text-base font-medium">Starting agent...</span>
+          </div>
+          <div ref={bottomRef} />
+        </div>
+      </div>
+    );
+  }
 
   // Empty state
   if (messages.length === 0) {
@@ -79,6 +95,24 @@ export const AgentConsole = ({ messages, onExampleClick, onShare, canShare }: Ag
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Latest status indicator - shown at top when agent is running */}
+        {isRunning && messages.length > 0 && (() => {
+          const latestStatus = [...messages].reverse().find(m => m.type === 'status');
+          if (latestStatus) {
+            return (
+              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border pb-4 mb-4">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30">
+                  <div className="w-5 h-5 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  <span className="text-sm font-medium text-[#F59E0B]">
+                    {(latestStatus.data as { message: string }).message}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
         {messages.map(message => (
           <MessageItem key={message.id} message={message} />
         ))}

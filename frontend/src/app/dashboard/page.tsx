@@ -196,6 +196,7 @@ function DashboardContent() {
           onExampleClick={handleExampleClick}
           onShare={handleShareRun}
           canShare={messages.some(m => m.type === 'done') && !isRunning}
+          isRunning={isRunning}
         />
 
         {/* Input bar */}
