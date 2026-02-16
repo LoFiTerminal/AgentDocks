@@ -31,20 +31,11 @@ export const metadata: Metadata = {
     title: 'AgentDocks.ai — Launch AI Agents in Seconds',
     description: 'Open source tool to run AI agents with a beautiful GUI. No terminal needed. Privacy first.',
     siteName: 'AgentDocks',
-    images: [
-      {
-        url: '/og-image.svg',
-        width: 1200,
-        height: 630,
-        alt: 'AgentDocks - Launch AI Agents in Seconds',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AgentDocks.ai — Launch AI Agents in Seconds',
     description: 'Open source tool to run AI agents with a beautiful GUI. No terminal needed. Privacy first.',
-    images: ['/og-image.svg'],
   },
 }
 
