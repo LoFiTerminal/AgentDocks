@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OG Image Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    #canvas {
+      width: 1200px;
+      height: 630px;
+      background: #1C1917;
+      position: relative;
+      overflow: hidden;
+    }
+    #grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(#292524 1px, transparent 1px),
+        linear-gradient(90deg, #292524 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+    }
+    #gradient {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(245, 158, 11, 0.15), transparent);
+    }
+    #content {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+    #logo {
+      margin-bottom: 40px;
+    }
+    #logo svg {
+      filter: drop-shadow(0 10px 30px rgba(245, 158, 11, 0.3));
+    }
+    h1 {
+      font-size: 72px;
+      font-weight: 700;
+      color: #FAFAF9;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: 36px;
+      font-weight: 400;
+      color: #A8A29E;
+      margin-bottom: 30px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 12px 32px;
+      background: rgba(245, 158, 11, 0.1);
+      border-radius: 24px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #F59E0B;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas">
+    <div id="grid"></div>
+    <div id="gradient"></div>
+    <div id="content">
+      <div id="logo">
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+          <rect x="10" y="10" width="180" height="180" rx="36" stroke="#F59E0B" stroke-width="12" fill="none"/>
+          <path d="M 100 60 L 80 110 L 110 110 L 85 160 L 130 100 L 100 100 Z" fill="#F59E0B"/>
+        </svg>
+      </div>
+      <h1>AgentDocks.ai</h1>
+      <h2>Launch AI Agents in Seconds</h2>
+      <div class="tag">Open Source • Privacy First • No Terminal</div>
+    </div>
+  </div>
+
+  <script>
+    // Instructions: Take a screenshot of the #canvas div at 1200x630
+    // Use browser dev tools or a screenshot tool to capture just the canvas area
+    console.log('To generate PNG: Screenshot the canvas div at 1200x630px');
+    console.log('Or use a tool like Puppeteer/Playwright to automate this');
+  </script>
+</body>
+</html>

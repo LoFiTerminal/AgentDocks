@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  agentdocks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentdocks
+    ports:
+      - "3000:3000"  # Frontend
+      - "8000:8000"  # Backend API
+    volumes:
+      # Persist configuration and shared runs
+      - ~/.agentdocks:/root/.agentdocks
+      # Mount Docker socket for local Docker sandbox (optional)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+
+      # Site URL for share links
+      - SITE_URL=http://localhost:3000
+
+      # AI Provider API Keys (optional - can be configured via UI)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+
+      # Sandbox Configuration
+      - E2B_API_KEY=${E2B_API_KEY:-}
+      - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
+
+      # Frontend URLs
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: agentdocks-network

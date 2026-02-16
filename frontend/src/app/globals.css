@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 26 83% 14%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 26 83% 14%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 38 92% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Grid pattern background */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(245, 158, 11, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(245, 158, 11, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
+}
+
+/* Animated particles */
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #F59E0B;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: float 20s infinite ease-in-out;
+}
+
+.particle-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 15s;
+}
+
+.particle-2 {
+  top: 60%;
+  left: 80%;
+  animation-delay: 3s;
+  animation-duration: 18s;
+}
+
+.particle-3 {
+  top: 40%;
+  left: 60%;
+  animation-delay: 6s;
+  animation-duration: 22s;
+}
+
+.particle-4 {
+  top: 80%;
+  left: 30%;
+  animation-delay: 9s;
+  animation-duration: 20s;
+}
+
+.particle-5 {
+  top: 30%;
+  left: 90%;
+  animation-delay: 12s;
+  animation-duration: 16s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(30px, -30px) scale(1.2);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.8);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translate(40px, 10px) scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+/* Logo glow pulse */
+.logo-glow {
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.6));
+  }
+}
+
+/* Gradient text animation */
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    #F59E0B 0%,
+    #FCD34D 25%,
+    #F59E0B 50%,
+    #FCD34D 75%,
+    #F59E0B 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 8s linear infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Page entry animations */
+@keyframes page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.page-enter {
+  animation: page-enter 400ms ease-out;
+}
+
+.slide-in-left {
+  animation: slide-in-left 400ms ease-out;
+}
+
+.slide-in-right {
+  animation: slide-in-right 400ms ease-out;
+}
+
+.scale-fade-in {
+  animation: scale-fade-in 300ms ease-out;
+}
+
+/* Stagger utility classes */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* Button hover effect */
+.btn-hover-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-hover-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-hover-glow:hover::before {
+  width: 300px;
+  height: 300px;
+}
