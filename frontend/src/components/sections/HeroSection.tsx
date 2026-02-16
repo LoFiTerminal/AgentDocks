@@ -76,6 +76,20 @@ export const HeroSection = () => {
               </a>
             </div>
 
+            {/* Already installed link (only show on public site) */}
+            {!isLocalhost && (
+              <div className="text-center">
+                <a
+                  href="http://localhost:3000"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-[#F59E0B] transition-colors inline-flex items-center gap-1"
+                >
+                  Already installed? Open AgentDocks →
+                </a>
+              </div>
+            )}
+
             {/* Trust Line */}
             <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
               <Check className="w-4 h-4 text-green-500" />

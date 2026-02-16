@@ -103,12 +103,19 @@ echo ""
 # Create launcher script
 info "Creating launcher script..."
 
-# Determine install location (try /usr/local/bin first, fall back to ~/.local/bin)
+# Try to install to /usr/local/bin (requires sudo if not writable)
 if [ -w /usr/local/bin ]; then
     LAUNCHER_PATH="/usr/local/bin/agentdocks"
+    USE_SUDO=false
+elif [ -d /usr/local/bin ]; then
+    LAUNCHER_PATH="/usr/local/bin/agentdocks"
+    USE_SUDO=true
+    info "Need sudo access to install to /usr/local/bin..."
 else
+    # Fallback to ~/.local/bin
     mkdir -p "$HOME/.local/bin"
     LAUNCHER_PATH="$HOME/.local/bin/agentdocks"
+    USE_SUDO=false
 
     # Add to PATH if not already there
     if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
@@ -126,15 +133,15 @@ else
     fi
 fi
 
-cat > "$LAUNCHER_PATH" << 'LAUNCHER'
-#!/bin/bash
+# Create the launcher script content
+LAUNCHER_CONTENT='#!/bin/bash
 set -e
 
 # Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+GREEN='"'"'\033[0;32m'"'"'
+BLUE='"'"'\033[0;34m'"'"'
+PURPLE='"'"'\033[0;35m'"'"'
+NC='"'"'\033[0m'"'"'
 
 cd ~/agentdocks
 
@@ -157,24 +164,33 @@ npm run dev > /dev/null 2>&1 &
 FRONTEND_PID=$!
 
 # Wait for services to start
+echo -e "${BLUE}→ Waiting for servers to boot...${NC}"
 sleep 3
 
+# Open browser
+open http://localhost:3000 2>/dev/null || true
+
 echo ""
-echo -e "${GREEN}✅ AgentDocks is running!${NC}"
-echo ""
-echo -e "   ${BLUE}Open in browser:${NC} http://localhost:3000"
+echo -e "${GREEN}✅ AgentDocks is running at http://localhost:3000${NC}"
 echo ""
 echo -e "   Press ${PURPLE}Ctrl+C${NC} to stop"
 echo ""
 
 # Trap Ctrl+C
-trap "echo ''; echo 'Stopping AgentDocks...'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; echo 'Goodbye!'; exit" INT TERM
+trap "echo '"'"''"'"'; echo '"'"'Stopping AgentDocks...'"'"'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; echo '"'"'Goodbye!'"'"'; exit" INT TERM
 
 # Wait for processes
 wait $BACKEND_PID $FRONTEND_PID
-LAUNCHER
+'
 
-chmod +x "$LAUNCHER_PATH"
+# Write launcher script (with sudo if needed)
+if [ "$USE_SUDO" = true ]; then
+    echo "$LAUNCHER_CONTENT" | sudo tee "$LAUNCHER_PATH" > /dev/null
+    sudo chmod +x "$LAUNCHER_PATH"
+else
+    echo "$LAUNCHER_CONTENT" > "$LAUNCHER_PATH"
+    chmod +x "$LAUNCHER_PATH"
+fi
 success "Launcher script created"
 
 echo ""

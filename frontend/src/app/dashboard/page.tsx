@@ -9,6 +9,7 @@ import { InputBar } from '@/components/agent/InputBar';
 import { PrivacyIndicator } from '@/components/PrivacyIndicator';
 import { ShareModal } from '@/components/agent/ShareModal';
 import { TEMPLATES } from '@/lib/templates';
+import { InstallInstructions } from '@/components/InstallInstructions';
 
 interface Task {
   id: string;
@@ -27,17 +28,15 @@ function DashboardContent() {
   const [startTime, setStartTime] = useState<number>(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [isLocalhost, setIsLocalhost] = useState(true);
 
-  // Check if running on localhost - redirect if not
+  // Check if running on localhost
   useEffect(() => {
-    const isLocalhost =
+    const isLocal =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
-
-    if (!isLocalhost) {
-      router.push('/');
-    }
-  }, [router]);
+    setIsLocalhost(isLocal);
+  }, []);
 
   // Load config and check for template param on mount
   useEffect(() => {
@@ -108,6 +107,11 @@ function DashboardContent() {
   const handleExampleClick = (prompt: string) => {
     handleSubmit(prompt);
   };
+
+  // If not localhost, show install instructions
+  if (!isLocalhost) {
+    return <InstallInstructions />;
+  }
 
   // Check if fully local
   const isFullyLocal = currentConfig?.provider === 'ollama' && currentConfig?.sandbox === 'docker';

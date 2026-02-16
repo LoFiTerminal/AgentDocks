@@ -36,8 +36,15 @@ dev:
 	@echo "⚡ Starting AgentDocks in development mode..."
 	@echo ""
 	@trap 'make stop' INT TERM; \
-	(cd backend && . venv/bin/activate && uvicorn app.main:app --reload --port 8000) & \
-	(cd frontend && npm run dev) & \
+	(cd backend && . venv/bin/activate && uvicorn app.main:app --reload --port 8000 > /dev/null 2>&1) & \
+	(cd frontend && npm run dev > /dev/null 2>&1) & \
+	sleep 3 && \
+	open http://localhost:3000 2>/dev/null && \
+	echo "" && \
+	echo "✅ AgentDocks is running at http://localhost:3000" && \
+	echo "" && \
+	echo "Press Ctrl+C to stop" && \
+	echo "" && \
 	wait
 
 # Start backend only
