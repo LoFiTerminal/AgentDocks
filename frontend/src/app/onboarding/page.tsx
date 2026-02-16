@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { StepIndicator } from '@/components/onboarding/StepIndicator';
@@ -9,6 +9,7 @@ import { ApiKeyStep } from '@/components/onboarding/ApiKeyStep';
 import { SandboxStep } from '@/components/onboarding/SandboxStep';
 import { ReadyStep } from '@/components/onboarding/ReadyStep';
 import { saveConfig } from '@/lib/api';
+import { AlertCircle, Terminal, ChevronRight } from 'lucide-react';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -16,6 +17,14 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [isLocalhost, setIsLocalhost] = useState(true);
+
+  useEffect(() => {
+    setIsLocalhost(
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+  }, []);
 
   const handleNext = () => {
     if (canProceed()) {
@@ -47,6 +56,47 @@ export default function OnboardingPage() {
       setIsLoading(false);
     }
   };
+
+  // If not localhost, show install instructions
+  if (!isLocalhost) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-2xl text-center space-y-8">
+          <div className="w-20 h-20 rounded-2xl bg-[#F59E0B]/10 flex items-center justify-center mx-auto">
+            <Terminal className="w-10 h-10 text-[#F59E0B]" />
+          </div>
+
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold">AgentDocks Runs On Your Machine</h1>
+            <p className="text-xl text-muted-foreground">
+              For security, API keys are never entered on a public website.
+              Install AgentDocks locally to get started.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-secondary/50 border border-border text-left space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold mb-2">Install AgentDocks locally:</h3>
+                <code className="block p-4 bg-[#0D0C0A] rounded-lg font-mono text-sm text-foreground">
+                  curl -fsSL https://raw.githubusercontent.com/LoFiTerminal/AgentDocks/main/scripts/install.sh | bash
+                </code>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 rounded-lg bg-[#F59E0B] text-[#1C1917] font-semibold hover:bg-[#D97706] transition-colors inline-flex items-center gap-2"
+          >
+            Back to Homepage
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8">

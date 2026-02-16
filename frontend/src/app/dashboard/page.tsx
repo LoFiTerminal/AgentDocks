@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAgent } from '@/hooks/useAgent';
 import { Sidebar } from '@/components/agent/Sidebar';
 import { AgentConsole } from '@/components/agent/AgentConsole';
@@ -18,6 +18,7 @@ interface Task {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { messages, isRunning, runAgent, stopAgent, clearMessages } = useAgent();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [currentConfig, setCurrentConfig] = useState<any>(null);
@@ -26,6 +27,17 @@ function DashboardContent() {
   const [startTime, setStartTime] = useState<number>(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+
+  // Check if running on localhost - redirect if not
+  useEffect(() => {
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    if (!isLocalhost) {
+      router.push('/');
+    }
+  }, [router]);
 
   // Load config and check for template param on mount
   useEffect(() => {

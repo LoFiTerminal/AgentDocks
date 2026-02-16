@@ -3,9 +3,27 @@
 import { useRouter } from 'next/navigation';
 import { AnimatedTerminal } from '@/components/AnimatedTerminal';
 import { Check, ChevronDown, Github } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export const HeroSection = () => {
   const router = useRouter();
+  const [isLocalhost, setIsLocalhost] = useState(true);
+
+  useEffect(() => {
+    setIsLocalhost(
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+  }, []);
+
+  const handleGetStarted = () => {
+    if (isLocalhost) {
+      router.push('/onboarding');
+    } else {
+      // Scroll to installation instructions
+      document.getElementById('quick-start')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 pb-16 px-6 overflow-hidden">
@@ -41,10 +59,10 @@ export const HeroSection = () => {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button
-                onClick={() => router.push('/onboarding')}
+                onClick={handleGetStarted}
                 className="px-8 py-4 bg-[#F59E0B] text-[#1C1917] rounded-lg font-semibold text-lg hover:bg-[#D97706] transition-all hover:scale-105 hover:shadow-2xl hover:shadow-[#F59E0B]/20 flex items-center justify-center gap-2"
               >
-                Get Started Free
+                {isLocalhost ? 'Get Started Free' : 'Install Locally'}
                 <span>→</span>
               </button>
               <a

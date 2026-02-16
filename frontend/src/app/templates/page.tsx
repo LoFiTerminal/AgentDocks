@@ -1,15 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TEMPLATES, CATEGORIES, Template } from '@/lib/templates';
-import { Search, Clock, FileUp, ArrowRight, Grid3x3, ArrowLeft } from 'lucide-react';
+import { Search, Clock, FileUp, ArrowRight, Grid3x3, ArrowLeft, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function TemplatesPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLocalhost, setIsLocalhost] = useState(true);
+
+  useEffect(() => {
+    setIsLocalhost(
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+  }, []);
 
   const filteredTemplates = TEMPLATES.filter(template => {
     const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
@@ -20,8 +28,13 @@ export default function TemplatesPage() {
   });
 
   const handleTemplateClick = (template: Template) => {
-    // Navigate to dashboard with template prompt
-    router.push(`/dashboard?template=${template.id}`);
+    if (isLocalhost) {
+      // Navigate to dashboard with template prompt
+      router.push(`/dashboard?template=${template.id}`);
+    } else {
+      // Scroll to install instructions on public site
+      router.push('/#quick-start');
+    }
   };
 
   return (
@@ -135,8 +148,17 @@ export default function TemplatesPage() {
 
               {/* Arrow */}
               <div className="flex items-center gap-2 text-sm text-[#F59E0B] font-semibold">
-                Use Template
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {isLocalhost ? (
+                  <>
+                    Use Template
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                ) : (
+                  <>
+                    Install AgentDocks
+                    <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                  </>
+                )}
               </div>
             </button>
           ))}
