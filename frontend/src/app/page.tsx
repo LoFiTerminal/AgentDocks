@@ -16,6 +16,7 @@ import { QuickStartSection } from '@/components/sections/QuickStartSection';
 export default function Home() {
   const router = useRouter();
   const [isCheckingConfig, setIsCheckingConfig] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     const checkLocalhostAndConfig = async () => {
@@ -43,16 +44,19 @@ export default function Home() {
           // If config exists with provider and model, redirect to dashboard
           // Note: apiKey is not returned by backend for security
           if (config && config.provider && config.model) {
-            router.push('/dashboard');
+            setShouldRedirect(true);
+            router.replace('/dashboard');
             return;
           }
         }
 
         // If 404 (no config) or incomplete, redirect to onboarding
-        router.push('/onboarding');
+        setShouldRedirect(true);
+        router.replace('/onboarding');
       } catch (error) {
         // If API call fails (backend not running), redirect to onboarding
-        router.push('/onboarding');
+        setShouldRedirect(true);
+        router.replace('/onboarding');
       }
     };
 
