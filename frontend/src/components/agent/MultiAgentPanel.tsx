@@ -183,16 +183,16 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-background border border-border rounded-xl shadow-2xl w-[95vw] max-w-5xl h-[80vh] flex flex-col overflow-hidden"
+        className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-4xl h-[75vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between p-2 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-amber-500" />
+            <Users className="w-4 h-4 text-amber-500" />
             <div>
-              <h2 className="text-lg font-bold">Multi-Agent System</h2>
+              <h2 className="text-base font-bold">Multi-Agent System</h2>
               <p className="text-xs text-muted-foreground">
-                4 specialized agents working together
+                4 specialized agents
               </p>
             </div>
           </div>
@@ -217,7 +217,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         {/* Content */}
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Panel: Workflow Selector */}
-          <div className="w-80 border-r border-border p-3 overflow-y-auto flex-shrink-0">
+          <div className="w-72 border-r border-border p-2 overflow-y-auto flex-shrink-0">
             <WorkflowSelector
               workflows={workflows}
               onRunWorkflow={handleRunWorkflow}
@@ -276,7 +276,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 p-3 overflow-y-auto min-h-0">
+            <div className="flex-1 p-2 overflow-y-auto min-h-0">
               <AnimatePresence mode="wait">
                 {activeTab === 'agents' ? (
                   <motion.div
@@ -334,17 +334,53 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
 
                     {workflowResult.steps?.map((step: any, idx: number) => (
                       <div key={idx} className="border border-border rounded-lg p-3">
-                        <div className="font-medium text-sm mb-1 capitalize">
+                        <div className="font-medium text-sm mb-2 capitalize">
                           {step.agent}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Status: {step.result?.status || 'N/A'}
-                        </div>
-                        {step.result?.review && (
-                          <div className="text-xs mt-2 text-muted-foreground line-clamp-3">
-                            {step.result.review}
+
+                        {/* Show implementation from coder */}
+                        {step.result?.implementation && (
+                          <div className="mb-2">
+                            <div className="text-xs font-medium mb-1">Code:</div>
+                            <pre className="text-xs bg-black/30 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
+                              {step.result.implementation}
+                            </pre>
                           </div>
                         )}
+
+                        {/* Show plan from architect */}
+                        {step.result?.plan && (
+                          <div className="mb-2">
+                            <div className="text-xs font-medium mb-1">Plan:</div>
+                            <pre className="text-xs bg-black/30 p-2 rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
+                              {step.result.plan}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Show test report */}
+                        {step.result?.test_report && (
+                          <div className="mb-2">
+                            <div className="text-xs font-medium mb-1">Tests:</div>
+                            <pre className="text-xs bg-black/30 p-2 rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
+                              {step.result.test_report}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Show review */}
+                        {step.result?.review && (
+                          <div className="mb-2">
+                            <div className="text-xs font-medium mb-1">Review:</div>
+                            <div className="text-xs text-muted-foreground max-h-40 overflow-y-auto whitespace-pre-wrap">
+                              {step.result.review}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-muted-foreground/50 mt-2">
+                          Status: {step.result?.status || 'N/A'}
+                        </div>
                       </div>
                     ))}
                   </motion.div>
