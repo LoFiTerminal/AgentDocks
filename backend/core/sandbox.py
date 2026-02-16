@@ -1,7 +1,7 @@
 """Sandbox abstraction layer for code execution."""
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict, Any
 import asyncio
 import os
 
@@ -42,6 +42,21 @@ class BaseSandbox(ABC):
     @abstractmethod
     async def destroy(self) -> None:
         """Clean up and destroy the sandbox."""
+        pass
+
+    @abstractmethod
+    async def copy_directory(self, local_path: str, sandbox_path: str, ignore_patterns: List[str]) -> bool:
+        """Copy entire directory to sandbox. Returns success status."""
+        pass
+
+    @abstractmethod
+    async def list_directory_recursive(self, path: str) -> List[Dict[str, Any]]:
+        """List all files recursively. Returns list of {path, type, size}."""
+        pass
+
+    @abstractmethod
+    async def get_file_hash(self, path: str) -> str:
+        """Get file hash for change detection."""
         pass
 
 
@@ -131,6 +146,89 @@ class E2BSandbox(BaseSandbox):
         if self.sandbox:
             await self.sandbox.kill()
             self.sandbox = None
+
+    async def copy_directory(self, local_path: str, sandbox_path: str, ignore_patterns: List[str]) -> bool:
+        """Copy entire directory to E2B sandbox."""
+        if not self.sandbox:
+            raise RuntimeError("Sandbox not initialized")
+
+        from pathlib import Path
+        from core.project_utils import should_ignore
+
+        local = Path(local_path)
+
+        # Walk the directory and upload files
+        for root, dirs, files in os.walk(local):
+            # Filter ignored directories
+            dirs[:] = [d for d in dirs if not should_ignore(d, ignore_patterns)]
+
+            for file in files:
+                if should_ignore(file, ignore_patterns):
+                    continue
+
+                file_path = Path(root) / file
+                # Get relative path from local root
+                rel_path = file_path.relative_to(local)
+                # Construct sandbox path
+                dest_path = f"{sandbox_path}/{rel_path}"
+
+                try:
+                    with open(file_path, 'r') as f:
+                        content = f.read()
+                    await self.sandbox.files.write(dest_path, content)
+                except Exception as e:
+                    print(f"Warning: Failed to copy {rel_path}: {e}")
+                    continue
+
+        return True
+
+    async def list_directory_recursive(self, path: str) -> List[Dict[str, Any]]:
+        """List all files recursively in E2B sandbox."""
+        if not self.sandbox:
+            raise RuntimeError("Sandbox not initialized")
+
+        # Use find command to list all files
+        stdout, _, _ = await self.execute_bash(
+            f"find {path} -type f -o -type d | head -1000"
+        )
+
+        files = []
+        for line in stdout.split('\n'):
+            line = line.strip()
+            if not line or line == path:
+                continue
+
+            # Determine type
+            is_file_stdout, _, is_file_code = await self.execute_bash(f"test -f {line} && echo 'file' || echo 'dir'")
+            file_type = 'file' if 'file' in is_file_stdout else 'directory'
+
+            # Get size if it's a file
+            size = None
+            if file_type == 'file':
+                size_stdout, _, _ = await self.execute_bash(f"stat -f%z {line} 2>/dev/null || stat -c%s {line} 2>/dev/null")
+                try:
+                    size = int(size_stdout.strip())
+                except:
+                    pass
+
+            files.append({
+                'path': line,
+                'type': file_type,
+                'size': size
+            })
+
+        return files
+
+    async def get_file_hash(self, path: str) -> str:
+        """Get SHA256 hash of file in E2B sandbox."""
+        if not self.sandbox:
+            raise RuntimeError("Sandbox not initialized")
+
+        stdout, _, code = await self.execute_bash(f"sha256sum {path} 2>/dev/null || shasum -a 256 {path}")
+        if code == 0 and stdout:
+            # sha256sum outputs: hash filename
+            return stdout.split()[0]
+        return ""
 
 
 class DockerSandbox(BaseSandbox):
@@ -251,6 +349,97 @@ class DockerSandbox(BaseSandbox):
         if self.client:
             self.client.close()
             self.client = None
+
+    async def copy_directory(self, local_path: str, sandbox_path: str, ignore_patterns: List[str]) -> bool:
+        """Copy directory to Docker container using tar."""
+        if not self.container:
+            raise RuntimeError("Container not initialized")
+
+        import tarfile
+        import io
+        from pathlib import Path
+        from core.project_utils import should_ignore
+
+        local = Path(local_path)
+        tar_stream = io.BytesIO()
+
+        with tarfile.open(fileobj=tar_stream, mode='w') as tar:
+            for root, dirs, files in os.walk(local):
+                # Filter ignored dirs
+                dirs[:] = [d for d in dirs if not should_ignore(d, ignore_patterns)]
+
+                for file in files:
+                    if should_ignore(file, ignore_patterns):
+                        continue
+
+                    file_path = Path(root) / file
+                    arcname = file_path.relative_to(local)
+                    try:
+                        tar.add(file_path, arcname=str(arcname))
+                    except Exception as e:
+                        print(f"Warning: Failed to add {arcname}: {e}")
+                        continue
+
+        tar_stream.seek(0)
+
+        # Upload to container
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(
+                None,
+                lambda: self.container.put_archive(sandbox_path, tar_stream.getvalue())
+            )
+            return True
+        except Exception as e:
+            print(f"Error copying directory: {e}")
+            return False
+
+    async def list_directory_recursive(self, path: str) -> List[Dict[str, Any]]:
+        """List all files recursively in Docker container."""
+        if not self.container:
+            raise RuntimeError("Container not initialized")
+
+        # Use find command
+        stdout, _, _ = await self.execute_bash(
+            f"find {path} -type f -o -type d | head -1000"
+        )
+
+        files = []
+        for line in stdout.split('\n'):
+            line = line.strip()
+            if not line or line == path:
+                continue
+
+            # Determine type
+            is_file_stdout, _, _ = await self.execute_bash(f"test -f {line} && echo 'file' || echo 'dir'")
+            file_type = 'file' if 'file' in is_file_stdout else 'directory'
+
+            # Get size if file
+            size = None
+            if file_type == 'file':
+                size_stdout, _, _ = await self.execute_bash(f"stat -c%s {line} 2>/dev/null")
+                try:
+                    size = int(size_stdout.strip())
+                except:
+                    pass
+
+            files.append({
+                'path': line,
+                'type': file_type,
+                'size': size
+            })
+
+        return files
+
+    async def get_file_hash(self, path: str) -> str:
+        """Get SHA256 hash of file in Docker container."""
+        if not self.container:
+            raise RuntimeError("Container not initialized")
+
+        stdout, _, code = await self.execute_bash(f"sha256sum {path} 2>/dev/null")
+        if code == 0 and stdout:
+            return stdout.split()[0]
+        return ""
 
 
 def create_sandbox(sandbox_type: str, **kwargs) -> BaseSandbox:
