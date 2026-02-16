@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, Users, MessageSquare } from 'lucide-react';
+import { X, RefreshCw, Users, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { AgentCard } from './AgentCard';
 import { MessageTimeline } from './MessageTimeline';
 import { WorkflowSelector } from './WorkflowSelector';
@@ -39,7 +39,8 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowOption[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [activeTab, setActiveTab] = useState<'agents' | 'messages'>('agents');
+  const [activeTab, setActiveTab] = useState<'agents' | 'messages' | 'results'>('agents');
+  const [workflowResult, setWorkflowResult] = useState<any>(null);
 
   // Load available workflows
   useEffect(() => {
@@ -80,6 +81,15 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
     if (isRunning) {
       console.log('Workflow already running, ignoring duplicate trigger');
       return;
+    }
+
+    // Reset system before starting new workflow
+    try {
+      await fetch('/api/multi-agent/reset', { method: 'POST' });
+      setAgents([]);
+      setMessages([]);
+    } catch (err) {
+      console.error('Failed to reset:', err);
     }
 
     setIsRunning(true);
@@ -126,7 +136,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
 
               if (event.type === 'result') {
                 console.log('Workflow result:', event.data);
-                alert(`Workflow completed! Decision: ${event.data.final_decision || 'PENDING'}`);
+                setWorkflowResult(event.data);
               }
 
               if (event.type === 'done' || event.type === 'error') {
@@ -173,16 +183,16 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-6xl h-[85vh] flex flex-col"
+        className="bg-background border border-border rounded-xl shadow-2xl w-[95vw] max-w-5xl h-[80vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <Users className="w-6 h-6 text-amber-500" />
+        <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-amber-500" />
             <div>
-              <h2 className="text-2xl font-bold">Multi-Agent System</h2>
-              <p className="text-sm text-muted-foreground">
-                Coordinate specialized agents to complete complex tasks
+              <h2 className="text-lg font-bold">Multi-Agent System</h2>
+              <p className="text-xs text-muted-foreground">
+                4 specialized agents working together
               </p>
             </div>
           </div>
@@ -207,7 +217,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         {/* Content */}
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Panel: Workflow Selector */}
-          <div className="w-96 border-r border-border p-4 overflow-y-auto flex-shrink-0">
+          <div className="w-80 border-r border-border p-3 overflow-y-auto flex-shrink-0">
             <WorkflowSelector
               workflows={workflows}
               onRunWorkflow={handleRunWorkflow}
@@ -218,11 +228,11 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
           {/* Right Panel: Agents & Messages */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Tabs */}
-            <div className="flex border-b border-border flex-shrink-0">
+            <div className="flex border-b border-border flex-shrink-0 text-sm">
               <button
                 onClick={() => setActiveTab('agents')}
                 className={`
-                  flex items-center gap-2 px-6 py-4 border-b-2 transition-colors
+                  flex items-center gap-2 px-4 py-2 border-b-2 transition-colors
                   ${
                     activeTab === 'agents'
                       ? 'border-amber-500 text-amber-500'
@@ -236,7 +246,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
               <button
                 onClick={() => setActiveTab('messages')}
                 className={`
-                  flex items-center gap-2 px-6 py-4 border-b-2 transition-colors
+                  flex items-center gap-2 px-4 py-2 border-b-2 transition-colors
                   ${
                     activeTab === 'messages'
                       ? 'border-amber-500 text-amber-500'
@@ -247,10 +257,26 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                 <MessageSquare className="w-4 h-4" />
                 Messages ({messages.length})
               </button>
+              {workflowResult && (
+                <button
+                  onClick={() => setActiveTab('results')}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 border-b-2 transition-colors
+                    ${
+                      activeTab === 'results'
+                        ? 'border-amber-500 text-amber-500'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }
+                  `}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Results
+                </button>
+              )}
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 p-4 overflow-y-auto min-h-0">
+            <div className="flex-1 p-3 overflow-y-auto min-h-0">
               <AnimatePresence mode="wait">
                 {activeTab === 'agents' ? (
                   <motion.div
@@ -283,6 +309,44 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                     exit={{ opacity: 0, x: -20 }}
                   >
                     <MessageTimeline messages={messages} />
+                  </motion.div>
+                ) : activeTab === 'results' && workflowResult ? (
+                  <motion.div
+                    key="results"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-3"
+                  >
+                    <div className="bg-secondary/30 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className={`w-5 h-5 ${
+                          workflowResult.final_decision === 'APPROVED' ? 'text-green-400' :
+                          workflowResult.final_decision === 'REJECTED' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`} />
+                        <span className="font-semibold">Decision: {workflowResult.final_decision}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Task: {workflowResult.task}
+                      </p>
+                    </div>
+
+                    {workflowResult.steps?.map((step: any, idx: number) => (
+                      <div key={idx} className="border border-border rounded-lg p-3">
+                        <div className="font-medium text-sm mb-1 capitalize">
+                          {step.agent}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Status: {step.result?.status || 'N/A'}
+                        </div>
+                        {step.result?.review && (
+                          <div className="text-xs mt-2 text-muted-foreground line-clamp-3">
+                            {step.result.review}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
