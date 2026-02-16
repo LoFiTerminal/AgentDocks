@@ -40,14 +40,15 @@ export default function Home() {
         if (response.ok) {
           const config = await response.json();
 
-          // If config exists and has required fields, redirect to dashboard
-          if (config && config.provider && config.apiKey) {
+          // If config exists with provider and model, redirect to dashboard
+          // Note: apiKey is not returned by backend for security
+          if (config && config.provider && config.model) {
             router.push('/dashboard');
             return;
           }
         }
 
-        // If no config or incomplete, redirect to onboarding
+        // If 404 (no config) or incomplete, redirect to onboarding
         router.push('/onboarding');
       } catch (error) {
         // If API call fails (backend not running), redirect to onboarding
