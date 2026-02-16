@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
-  metadataBase: new URL('https://agentdocks.vercel.app'),
+  metadataBase: new URL('https://agentdocks.ai'),
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://agentdocks.vercel.app',
+    url: 'https://agentdocks.ai',
     title: 'AgentDocks.ai — Launch AI Agents in Seconds',
     description: 'Open source tool to run AI agents with a beautiful GUI. No terminal needed. Privacy first.',
     siteName: 'AgentDocks',
