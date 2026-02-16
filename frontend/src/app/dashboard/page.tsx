@@ -10,6 +10,7 @@ import { PrivacyIndicator } from '@/components/PrivacyIndicator';
 import { ShareModal } from '@/components/agent/ShareModal';
 import { ProjectModal } from '@/components/agent/ProjectModal';
 import { DiffPanel } from '@/components/agent/DiffPanel';
+import { MultiAgentPanel } from '@/components/agent/MultiAgentPanel';
 import { TEMPLATES } from '@/lib/templates';
 import { InstallInstructions } from '@/components/InstallInstructions';
 
@@ -35,6 +36,7 @@ function DashboardContent() {
   const [showDiffPanel, setShowDiffPanel] = useState(false);
   const [projectChanges, setProjectChanges] = useState<any[]>([]);
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
+  const [showMultiAgent, setShowMultiAgent] = useState(false);
 
   // Check if running on localhost
   useEffect(() => {
@@ -176,6 +178,7 @@ function DashboardContent() {
           tasks={tasks}
           onNewTask={handleNewTask}
           onOpenProject={() => setShowProjectModal(true)}
+          onOpenMultiAgent={() => setShowMultiAgent(true)}
           hasProject={!!currentConfig?.current_project}
           currentConfig={currentConfig}
         />
@@ -235,6 +238,11 @@ function DashboardContent() {
             setProjectChanges([]);
           }}
         />
+      )}
+
+      {/* Multi-Agent Panel */}
+      {showMultiAgent && (
+        <MultiAgentPanel onClose={() => setShowMultiAgent(false)} />
       )}
     </div>
   );

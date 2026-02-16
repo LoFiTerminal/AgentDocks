@@ -1,7 +1,7 @@
 'use client';
 
 import { Logo } from '@/components/Logo';
-import { Plus, Settings, Clock, Grid3x3, BookOpen, Folder } from 'lucide-react';
+import { Plus, Settings, Clock, Grid3x3, BookOpen, Folder, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Task {
@@ -14,6 +14,7 @@ interface SidebarProps {
   tasks: Task[];
   onNewTask: () => void;
   onOpenProject: () => void;
+  onOpenMultiAgent: () => void;
   hasProject: boolean;
   currentConfig: {
     provider: string;
@@ -22,7 +23,7 @@ interface SidebarProps {
   } | null;
 }
 
-export const Sidebar = ({ tasks, onNewTask, onOpenProject, hasProject, currentConfig }: SidebarProps) => {
+export const Sidebar = ({ tasks, onNewTask, onOpenProject, onOpenMultiAgent, hasProject, currentConfig }: SidebarProps) => {
   const router = useRouter();
 
   return (
@@ -57,6 +58,14 @@ export const Sidebar = ({ tasks, onNewTask, onOpenProject, hasProject, currentCo
         >
           <Grid3x3 className="w-4 h-4 text-muted-foreground" />
           <span>Templates</span>
+        </button>
+        <button
+          onClick={onOpenMultiAgent}
+          className="w-full px-4 py-2 rounded-lg text-sm flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left bg-amber-500/10 border border-amber-500/20"
+        >
+          <Users className="w-4 h-4 text-amber-500" />
+          <span className="text-amber-500 font-medium">Multi-Agent</span>
+          <span className="ml-auto text-xs bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">New</span>
         </button>
         <button
           onClick={() => router.push('/recipes')}
