@@ -301,7 +301,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                       </div>
                     )}
                   </motion.div>
-                ) : (
+                ) : activeTab === 'messages' ? (
                   <motion.div
                     key="messages"
                     initial={{ opacity: 0, x: 20 }}
@@ -348,7 +348,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                       </div>
                     ))}
                   </motion.div>
-                )}
+                ) : null}
               </AnimatePresence>
             </div>
           </div>
