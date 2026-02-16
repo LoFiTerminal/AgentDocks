@@ -83,9 +83,17 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
-        # Wrap command to run in /workspace/ directory (if not already prefixed with cd)
-        if not command.strip().startswith("cd "):
-            command = f"cd /workspace && {command}"
+        # Wrap command to run in /workspace/ directory
+        # Skip if: already has cd, creates /workspace, or uses absolute paths
+        cmd_lower = command.strip().lower()
+        skip_cd = (
+            cmd_lower.startswith("cd ") or
+            "mkdir" in cmd_lower and "/workspace" in cmd_lower or
+            cmd_lower.startswith("/")
+        )
+
+        if not skip_cd:
+            command = f"cd /workspace 2>/dev/null && {command}"
 
         # Run bash command using run_code with bash language
         result = await self.sandbox.run_code(command, language="bash")

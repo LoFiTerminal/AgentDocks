@@ -68,6 +68,9 @@ class AgentRunner:
             async with sandbox:
                 yield await stream_status("Sandbox ready!")
 
+                # Ensure /workspace/ directory exists
+                await sandbox.execute_bash("mkdir -p /workspace")
+
                 # Sync project if one is open
                 from app.config import get_config
                 from core.project_manager import ProjectManager
@@ -100,11 +103,16 @@ class AgentRunner:
                 # Upload files if provided
                 if uploaded_files:
                     yield await stream_status(f"Uploading {len(uploaded_files)} files...")
+                    # Create /workspace/ directory first
+                    await sandbox.execute_bash("mkdir -p /workspace")
                     for file_data in uploaded_files:
+                        # Upload to /workspace/
+                        file_path = f"/workspace/{file_data['name']}"
                         await sandbox.upload_file(
-                            file_data["name"],
+                            file_path,
                             file_data["content"]
                         )
+                    yield await stream_status(f"Uploaded {len(uploaded_files)} files to /workspace/")
 
                 # Initialize conversation
                 messages = [
