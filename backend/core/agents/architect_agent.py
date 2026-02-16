@@ -77,12 +77,18 @@ Current context:
 
         # Call AI provider
         from core.tools import TOOLS
-        response = await self.provider.complete(
-            messages=messages,
-            tools=[tool for tool in TOOLS if tool["name"] in self.get_available_tools()],
-            model=self.model,
-            system=self.get_system_prompt()
-        )
+        print(f"🤖 {self.agent_id} calling AI provider with model: {self.model}")
+        try:
+            response = await self.provider.complete(
+                messages=messages,
+                tools=[tool for tool in TOOLS if tool["name"] in self.get_available_tools()],
+                model=self.model,
+                system=self.get_system_prompt()
+            )
+            print(f"✅ {self.agent_id} received response with {len(response.content)} blocks")
+        except Exception as e:
+            print(f"❌ {self.agent_id} AI provider error: {e}")
+            raise
 
         # Extract plan from response
         plan_text = ""

@@ -77,7 +77,19 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
   }, []);
 
   const handleRunWorkflow = async (workflowId: string, task: string) => {
+    if (isRunning) {
+      console.log('Workflow already running, ignoring duplicate trigger');
+      return;
+    }
+
     setIsRunning(true);
+    console.log('Starting workflow:', workflowId, task);
+
+    // Safety timeout - reset after 2 minutes
+    const timeout = setTimeout(() => {
+      console.log('Workflow timeout - resetting');
+      setIsRunning(false);
+    }, 120000);
 
     try {
       const response = await fetch('/api/multi-agent/run', {
@@ -93,7 +105,11 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
-      if (!reader) return;
+      if (!reader) {
+        clearTimeout(timeout);
+        setIsRunning(false);
+        return;
+      }
 
       while (true) {
         const { done, value } = await reader.read();
@@ -104,17 +120,31 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const event = JSON.parse(line.slice(6));
-            console.log('Multi-agent event:', event);
+            try {
+              const event = JSON.parse(line.slice(6));
+              console.log('Multi-agent event:', event);
 
-            if (event.type === 'done' || event.type === 'error') {
-              setIsRunning(false);
+              if (event.type === 'result') {
+                console.log('Workflow result:', event.data);
+                alert(`Workflow completed! Decision: ${event.data.final_decision || 'PENDING'}`);
+              }
+
+              if (event.type === 'done' || event.type === 'error') {
+                clearTimeout(timeout);
+                setIsRunning(false);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE event:', e);
             }
           }
         }
       }
+
+      clearTimeout(timeout);
+      setIsRunning(false);
     } catch (err) {
       console.error('Failed to run workflow:', err);
+      clearTimeout(timeout);
       setIsRunning(false);
     }
   };
@@ -143,10 +173,10 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col"
+        className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-6xl h-[85vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-amber-500" />
             <div>
@@ -175,9 +205,9 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Panel: Workflow Selector */}
-          <div className="w-1/3 border-r border-border p-6 overflow-y-auto">
+          <div className="w-96 border-r border-border p-4 overflow-y-auto flex-shrink-0">
             <WorkflowSelector
               workflows={workflows}
               onRunWorkflow={handleRunWorkflow}
@@ -186,9 +216,9 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
           </div>
 
           {/* Right Panel: Agents & Messages */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Tabs */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-border flex-shrink-0">
               <button
                 onClick={() => setActiveTab('agents')}
                 className={`
@@ -220,7 +250,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-4 overflow-y-auto min-h-0">
               <AnimatePresence mode="wait">
                 {activeTab === 'agents' ? (
                   <motion.div
