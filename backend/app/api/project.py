@@ -1,7 +1,7 @@
 """Project management API endpoints."""
 
 from fastapi import APIRouter, HTTPException
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 from datetime import datetime
 
@@ -25,6 +25,8 @@ router = APIRouter(prefix="/api/project", tags=["project"])
 
 # Global project manager (one active project per session)
 _active_project_manager: Optional[ProjectManager] = None
+# Cached changes from last agent run (before sandbox destruction)
+_cached_changes: Optional[List] = None
 
 @router.post("/open")
 async def open_project(request: ProjectOpenRequest):
@@ -170,58 +172,72 @@ async def get_project_file(path: str):
 @router.get("/changes")
 async def get_project_changes():
     """Detect and return all changes in the sandbox."""
-    global _active_project_manager
+    global _active_project_manager, _cached_changes
 
-    if not _active_project_manager:
+    # Use cached changes if available (from last agent run before sandbox destruction)
+    if _cached_changes is not None:
+        changes = _cached_changes
+    elif _active_project_manager:
+        try:
+            changes = await _active_project_manager.detect_changes()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to detect changes: {str(e)}")
+    else:
         raise HTTPException(
             status_code=400,
             detail="No active project in sandbox"
         )
 
-    try:
-        changes = await _active_project_manager.detect_changes()
-
-        return ProjectChanges(
-            changes=changes,
-            total_files=len(changes),
-            created_count=len([c for c in changes if c.type == 'created']),
-            modified_count=len([c for c in changes if c.type == 'modified']),
-            deleted_count=len([c for c in changes if c.type == 'deleted'])
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to detect changes: {str(e)}")
+    return ProjectChanges(
+        changes=changes,
+        total_files=len(changes),
+        created_count=len([c for c in changes if c.type == 'created']),
+        modified_count=len([c for c in changes if c.type == 'modified']),
+        deleted_count=len([c for c in changes if c.type == 'deleted'])
+    )
 
 @router.post("/apply-changes")
 async def apply_project_changes(request: ApplyChangesRequest):
     """Apply approved changes to local filesystem."""
-    global _active_project_manager
+    global _active_project_manager, _cached_changes
 
-    if not _active_project_manager:
+    # Use cached changes if sandbox is destroyed, otherwise detect fresh
+    if _cached_changes is not None:
+        all_changes = _cached_changes
+    elif _active_project_manager:
+        try:
+            all_changes = await _active_project_manager.detect_changes()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to detect changes: {str(e)}")
+    else:
         raise HTTPException(
             status_code=400,
             detail="No active project"
         )
 
+    # Filter to approved only
+    approved = [c for c in all_changes if c.path in request.approved_changes]
+
+    if not approved:
+        return {
+            "success": False,
+            "message": "No valid changes to apply",
+            "applied": [],
+            "failed": []
+        }
+
+    # Apply changes to local filesystem
+    if not _active_project_manager:
+        raise HTTPException(status_code=400, detail="Project manager not available")
+
     try:
-        # Get all changes
-        all_changes = await _active_project_manager.detect_changes()
-
-        # Filter to approved only
-        approved = [c for c in all_changes if c.path in request.approved_changes]
-
-        if not approved:
-            return {
-                "success": False,
-                "message": "No valid changes to apply",
-                "applied": [],
-                "failed": []
-            }
-
-        # Apply changes
         result = await _active_project_manager.apply_changes(
             approved,
             create_backup_flag=request.create_backup
         )
+
+        # Clear cached changes after applying
+        _cached_changes = None
 
         return {
             "success": True,

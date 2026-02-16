@@ -83,6 +83,10 @@ class E2BSandbox(BaseSandbox):
         if not self.sandbox:
             raise RuntimeError("Sandbox not initialized")
 
+        # Wrap command to run in /workspace/ directory (if not already prefixed with cd)
+        if not command.strip().startswith("cd "):
+            command = f"cd /workspace && {command}"
+
         # Run bash command using run_code with bash language
         result = await self.sandbox.run_code(command, language="bash")
 

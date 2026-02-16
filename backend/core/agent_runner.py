@@ -216,6 +216,19 @@ class AgentRunner:
                 # Task complete
                 yield await stream_status("Task complete. Cleaning up...")
 
+                # Detect changes if project was loaded
+                if project_manager:
+                    try:
+                        import app.api.project as project_api
+                        yield await stream_status("Detecting changes...")
+                        changes = await project_manager.detect_changes()
+                        # Cache changes in global for API access
+                        project_api._cached_changes = changes
+                        if changes:
+                            yield await stream_status(f"Found {len(changes)} file changes")
+                    except Exception as e:
+                        print(f"Error detecting changes: {e}")
+
         except Exception as e:
             yield await stream_error(f"Agent error: {str(e)}")
 
@@ -247,17 +260,26 @@ class AgentRunner:
 
         elif tool_name == "write":
             path = tool_input["path"]
+            # Prepend /workspace/ if relative path
+            if not path.startswith('/'):
+                path = f"/workspace/{path}"
             content = tool_input["content"]
             success = await sandbox.write_file(path, content)
             return {"success": success, "path": path}
 
         elif tool_name == "read":
             path = tool_input["path"]
+            # Prepend /workspace/ if relative path
+            if not path.startswith('/'):
+                path = f"/workspace/{path}"
             content = await sandbox.read_file(path)
             return {"content": content}
 
         elif tool_name == "edit":
             path = tool_input["path"]
+            # Prepend /workspace/ if relative path
+            if not path.startswith('/'):
+                path = f"/workspace/{path}"
             old_text = tool_input["old_text"]
             new_text = tool_input["new_text"]
 
