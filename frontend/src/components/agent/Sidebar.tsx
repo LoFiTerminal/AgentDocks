@@ -1,7 +1,7 @@
 'use client';
 
 import { Logo } from '@/components/Logo';
-import { Plus, Settings, Clock, Grid3x3, BookOpen } from 'lucide-react';
+import { Plus, Settings, Clock, Grid3x3, BookOpen, Folder } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Task {
@@ -13,6 +13,8 @@ interface Task {
 interface SidebarProps {
   tasks: Task[];
   onNewTask: () => void;
+  onOpenProject: () => void;
+  hasProject: boolean;
   currentConfig: {
     provider: string;
     model: string;
@@ -20,7 +22,7 @@ interface SidebarProps {
   } | null;
 }
 
-export const Sidebar = ({ tasks, onNewTask, currentConfig }: SidebarProps) => {
+export const Sidebar = ({ tasks, onNewTask, onOpenProject, hasProject, currentConfig }: SidebarProps) => {
   const router = useRouter();
 
   return (
@@ -64,6 +66,16 @@ export const Sidebar = ({ tasks, onNewTask, currentConfig }: SidebarProps) => {
           <BookOpen className="w-4 h-4 text-muted-foreground" />
           <span>Recipes</span>
           <span className="ml-auto text-xs text-muted-foreground">Soon</span>
+        </button>
+        <button
+          onClick={onOpenProject}
+          className="w-full px-4 py-2 rounded-lg text-sm flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left"
+        >
+          <Folder className="w-4 h-4 text-muted-foreground" />
+          <span>My Project</span>
+          {hasProject && (
+            <span className="ml-auto w-2 h-2 rounded-full bg-[#F59E0B]" />
+          )}
         </button>
       </div>
 

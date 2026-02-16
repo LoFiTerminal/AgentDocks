@@ -8,6 +8,8 @@ import { AgentConsole } from '@/components/agent/AgentConsole';
 import { InputBar } from '@/components/agent/InputBar';
 import { PrivacyIndicator } from '@/components/PrivacyIndicator';
 import { ShareModal } from '@/components/agent/ShareModal';
+import { ProjectModal } from '@/components/agent/ProjectModal';
+import { DiffPanel } from '@/components/agent/DiffPanel';
 import { TEMPLATES } from '@/lib/templates';
 import { InstallInstructions } from '@/components/InstallInstructions';
 
@@ -29,6 +31,10 @@ function DashboardContent() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [isLocalhost, setIsLocalhost] = useState(true);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showDiffPanel, setShowDiffPanel] = useState(false);
+  const [projectChanges, setProjectChanges] = useState<any[]>([]);
+  const [recentProjects, setRecentProjects] = useState<any[]>([]);
 
   // Check if running on localhost
   useEffect(() => {
@@ -53,6 +59,12 @@ function DashboardContent() {
         setInitialQuery(template.prompt);
       }
     }
+
+    // Load recent projects
+    fetch('/api/project/recent')
+      .then(res => res.json())
+      .then(data => setRecentProjects(data.recent_projects || []))
+      .catch(err => console.error('Failed to load recent projects:', err));
   }, [searchParams]);
 
   const handleSubmit = async (query: string, files?: File[]) => {
@@ -108,6 +120,46 @@ function DashboardContent() {
     handleSubmit(prompt);
   };
 
+  const handleProjectSelected = async (path: string) => {
+    setShowProjectModal(false);
+    // Reload config to get updated current_project
+    try {
+      const response = await fetch('/api/config');
+      const config = await response.json();
+      setCurrentConfig(config);
+
+      // Reload recent projects
+      const recentRes = await fetch('/api/project/recent');
+      const recentData = await recentRes.json();
+      setRecentProjects(recentData.recent_projects || []);
+    } catch (err) {
+      console.error('Failed to reload config:', err);
+    }
+  };
+
+  const handleApplyChanges = async (paths: string[]) => {
+    try {
+      const response = await fetch('/api/project/apply-changes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approved_changes: paths,
+          create_backup: true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Changes applied:', result);
+        setShowDiffPanel(false);
+        setProjectChanges([]);
+        // Could show success notification here
+      }
+    } catch (err) {
+      console.error('Failed to apply changes:', err);
+    }
+  };
+
   // If not localhost, show install instructions
   if (!isLocalhost) {
     return <InstallInstructions />;
@@ -123,6 +175,8 @@ function DashboardContent() {
         <Sidebar
           tasks={tasks}
           onNewTask={handleNewTask}
+          onOpenProject={() => setShowProjectModal(true)}
+          hasProject={!!currentConfig?.current_project}
           currentConfig={currentConfig}
         />
       </div>
@@ -158,6 +212,27 @@ function DashboardContent() {
         <ShareModal
           shareUrl={shareUrl}
           onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {/* Project Modal */}
+      {showProjectModal && (
+        <ProjectModal
+          onClose={() => setShowProjectModal(false)}
+          onProjectSelected={handleProjectSelected}
+          recentProjects={recentProjects}
+        />
+      )}
+
+      {/* Diff Panel */}
+      {showDiffPanel && (
+        <DiffPanel
+          changes={projectChanges}
+          onApprove={handleApplyChanges}
+          onReject={() => {
+            setShowDiffPanel(false);
+            setProjectChanges([]);
+          }}
         />
       )}
     </div>
