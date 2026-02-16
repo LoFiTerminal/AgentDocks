@@ -101,7 +101,7 @@ class Orchestrator:
             coder = self._create_agent(AgentRole.CODER)
             coder_context = {
                 "plan": self.shared_context.get_plan(),
-                **context or {}
+                **(context or {})
             }
             code_result = await coder.process_task(task, coder_context)
             results["steps"].append({
@@ -122,7 +122,7 @@ class Orchestrator:
             test_context = {
                 "plan": self.shared_context.get_plan(),
                 "files_modified": self.shared_context.get_files_to_modify(),
-                **context or {}
+                **(context or {})
             }
             test_result = await tester.process_task(
                 f"Write and run tests for: {task}",
@@ -140,7 +140,7 @@ class Orchestrator:
                 "plan": self.shared_context.get_plan(),
                 "files_modified": self.shared_context.get_files_to_modify(),
                 "test_results": test_result,
-                **context or {}
+                **(context or {})
             }
             review_result = await reviewer.process_task(
                 f"Review implementation of: {task}",

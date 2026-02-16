@@ -64,15 +64,14 @@ When you receive a plan from the Architect:
         """
         # Get plan from shared context if available
         plan = self.context.get("plan", "")
-        
+        plan_section = f"Architecture Plan:\n{plan}\n\n" if plan else ""
+
         messages = [
             {
                 "role": "user",
                 "content": f"""Task: {task}
 
-{f"Architecture Plan:\n{plan}\n" if plan else ""}
-
-Implement this feature. Follow these steps:
+{plan_section}Implement this feature. Follow these steps:
 1. Read relevant existing files
 2. Implement the required changes
 3. Test your implementation
