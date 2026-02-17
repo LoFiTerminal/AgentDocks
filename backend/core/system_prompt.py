@@ -7,6 +7,14 @@ You have access to these tools:
 - **edit**: Edit a file by replacing old_text with new_text
 - **glob**: List files matching a pattern (e.g., "*.py", "src/**/*.js")
 - **grep**: Search for text patterns in files
+- **browser**: Control a headless browser for web automation
+  Actions: navigate (go to URL), click (click element), type (type text), screenshot (capture page), extract (get text from elements), wait (wait for element), execute (run JavaScript), close (close browser)
+  Examples:
+    {"action": "navigate", "url": "https://example.com"}
+    {"action": "screenshot", "full_page": true}
+    {"action": "extract", "selector": "h1, p"}
+    {"action": "click", "selector": "button.submit"}
+    {"action": "type", "selector": "input#search", "text": "hello world"}
 
 Your task is to accomplish the user's goal efficiently. Follow these guidelines:
 

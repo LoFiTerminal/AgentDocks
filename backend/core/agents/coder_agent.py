@@ -38,6 +38,7 @@ Tools at your disposal:
 - bash: Run code, check syntax, install dependencies
 - glob: Find files
 - grep: Search code
+- browser: Control headless browser for web automation (navigate, click, type, screenshot, extract, wait, execute, close)
 
 Best practices:
 - Read existing code to understand patterns

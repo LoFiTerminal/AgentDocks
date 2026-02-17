@@ -43,3 +43,13 @@ async def stream_error(message: str) -> str:
 async def stream_done(message: str = "Task complete. Sandbox destroyed.") -> str:
     """Stream completion event."""
     return format_sse("done", {"message": message})
+
+
+async def stream_browser_action(action: str, details: Dict[str, Any]) -> str:
+    """Stream a browser action progress event."""
+    return format_sse("browser_action", {"action": action, "details": details})
+
+
+async def stream_screenshot(screenshot_data: str, path: str) -> str:
+    """Stream a browser screenshot."""
+    return format_sse("screenshot", {"data": screenshot_data, "path": path})

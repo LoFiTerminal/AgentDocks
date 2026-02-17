@@ -44,6 +44,7 @@ Tools at your disposal:
 - bash: Run test suites, check coverage
 - glob: Find test files
 - grep: Search for test patterns
+- browser: Control headless browser for automated web testing (navigate, click, type, screenshot, extract, wait, execute, close)
 
 Test frameworks you might use:
 - Python: pytest, unittest

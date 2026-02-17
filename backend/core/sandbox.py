@@ -67,6 +67,7 @@ class E2BSandbox(BaseSandbox):
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.sandbox = None
+        self._playwright_installed = False
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -114,6 +115,17 @@ class E2BSandbox(BaseSandbox):
         exit_code = 1 if result.error else 0
 
         return stdout, stderr, exit_code
+
+    async def _ensure_playwright_installed(self):
+        """Ensure Playwright is installed in the E2B sandbox."""
+        if self._playwright_installed:
+            return
+
+        # Install playwright and chromium
+        await self.execute_bash(
+            "pip install playwright && python -m playwright install chromium"
+        )
+        self._playwright_installed = True
 
     async def write_file(self, path: str, content: str) -> bool:
         """Write file in E2B sandbox."""
@@ -269,8 +281,11 @@ class E2BSandbox(BaseSandbox):
 class DockerSandbox(BaseSandbox):
     """Local Docker sandbox implementation."""
 
-    def __init__(self, image: str = "python:3.11-slim"):
-        self.image = image
+    def __init__(self, image: str = "python:3.11-slim", enable_browser: bool = False):
+        if enable_browser:
+            self.image = "agentdocks-playwright:latest"
+        else:
+            self.image = image
         self.container = None
         self.client = None
 

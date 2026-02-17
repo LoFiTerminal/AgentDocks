@@ -155,11 +155,26 @@ class AgentRunner:
 
                             # Execute tool
                             try:
+                                # Stream browser action if it's a browser tool
+                                if block.name == "browser":
+                                    from core.stream import stream_browser_action, stream_screenshot
+                                    action = block.input.get("action", "unknown")
+                                    yield await stream_browser_action(action, block.input)
+
                                 result = await self._execute_tool(
                                     sandbox,
                                     block.name,
                                     block.input
                                 )
+
+                                # Stream screenshot if browser tool returned one
+                                if block.name == "browser" and result.get("screenshot_data"):
+                                    from core.stream import stream_screenshot
+                                    yield await stream_screenshot(
+                                        result["screenshot_data"],
+                                        result.get("screenshot_path", "unknown")
+                                    )
+
                                 yield await stream_tool_result(result, is_error=False)
 
                                 # Add to conversation
@@ -325,6 +340,21 @@ class AgentRunner:
                 f"grep -r {shlex.quote(pattern)} {shlex.quote(path)} 2>/dev/null || true"
             )
             return {"matches": stdout}
+
+        elif tool_name == "browser":
+            # Initialize browser manager if not already done
+            if not hasattr(sandbox, '_browser_manager'):
+                from core.browser_manager import BrowserManager
+                sandbox._browser_manager = BrowserManager(sandbox)
+
+            # Execute browser action
+            action = tool_input["action"]
+            result = await sandbox._browser_manager.execute_action(
+                action=action,
+                **{k: v for k, v in tool_input.items() if k != "action"}
+            )
+
+            return result
 
         else:
             raise ValueError(f"Unknown tool: {tool_name}")

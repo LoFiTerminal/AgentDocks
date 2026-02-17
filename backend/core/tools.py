@@ -106,5 +106,46 @@ TOOLS = [
             },
             "required": ["pattern"]
         }
+    },
+    {
+        "name": "browser",
+        "description": "Control a headless browser for web automation. Supports navigation, interaction, screenshots, and data extraction. Actions: navigate (go to URL), click (click element by CSS selector), type (type text into input), screenshot (capture page image), extract (get text from elements), wait (wait for element), execute (run JavaScript), close (close browser).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["navigate", "click", "type", "screenshot", "extract", "wait", "execute", "close"],
+                    "description": "The browser action to perform"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "URL to navigate to (required for 'navigate' action)"
+                },
+                "selector": {
+                    "type": "string",
+                    "description": "CSS selector for element (required for 'click', 'type', 'extract', 'wait' actions)"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "Text to type (required for 'type' action)"
+                },
+                "javascript": {
+                    "type": "string",
+                    "description": "JavaScript code to execute (required for 'execute' action)"
+                },
+                "full_page": {
+                    "type": "boolean",
+                    "description": "Capture full page screenshot (optional for 'screenshot' action, default: false)",
+                    "default": false
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Timeout in milliseconds (default: 30000)",
+                    "default": 30000
+                }
+            },
+            "required": ["action"]
+        }
     }
 ]

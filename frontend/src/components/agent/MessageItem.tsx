@@ -183,6 +183,61 @@ export const MessageItem = ({ message }: MessageItemProps) => {
     );
   }
 
+  // Browser action progress
+  if (type === 'browser_action') {
+    const actionData = data as { action: string; details: any };
+    return (
+      <div className="animate-fade-in">
+        <div className="flex items-center gap-3 text-sm text-purple-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Browser: {actionData.action}...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Screenshot event
+  if (type === 'screenshot') {
+    const screenshotData = data as { data: string; path: string };
+    return (
+      <div className="animate-fade-in">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <Eye className="w-4 h-4 text-purple-500" />
+          </div>
+          <div className="flex-1">
+            <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+              <div className="text-sm font-semibold text-purple-400 mb-2">
+                Screenshot Captured
+              </div>
+              <img
+                src={`data:image/png;base64,${screenshotData.data}`}
+                alt="Browser screenshot"
+                className="w-full rounded-lg border border-border"
+              />
+              <div className="mt-2">
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = `data:image/png;base64,${screenshotData.data}`;
+                    link.download = screenshotData.path.split('/').pop() || 'screenshot.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="px-3 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-3 h-3" />
+                  Download Screenshot
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Error event
   if (type === 'error') {
     const errorData = data as { message: string };
