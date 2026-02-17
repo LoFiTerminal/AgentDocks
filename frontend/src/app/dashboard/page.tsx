@@ -10,7 +10,7 @@ import { PrivacyIndicator } from '@/components/PrivacyIndicator';
 import { ShareModal } from '@/components/agent/ShareModal';
 import { ProjectModal } from '@/components/agent/ProjectModal';
 import { DiffPanel } from '@/components/agent/DiffPanel';
-import { MultiAgentPanel } from '@/components/agent/MultiAgentPanel';
+import { AgentWorkspace } from '@/components/agent/AgentWorkspace';
 import { TEMPLATES } from '@/lib/templates';
 import { InstallInstructions } from '@/components/InstallInstructions';
 
@@ -36,7 +36,13 @@ function DashboardContent() {
   const [showDiffPanel, setShowDiffPanel] = useState(false);
   const [projectChanges, setProjectChanges] = useState<any[]>([]);
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
-  const [showMultiAgent, setShowMultiAgent] = useState(false);
+  const [multiAgentMode, setMultiAgentMode] = useState(false);
+  const [agentStates, setAgentStates] = useState([
+    { id: 'architect', name: 'Architect', role: 'architect' as const, status: 'idle' as const, output: [] },
+    { id: 'coder', name: 'Coder', role: 'coder' as const, status: 'idle' as const, output: [] },
+    { id: 'tester', name: 'Tester', role: 'tester' as const, status: 'idle' as const, output: [] },
+    { id: 'reviewer', name: 'Reviewer', role: 'reviewer' as const, status: 'idle' as const, output: [] },
+  ]);
 
   // Check if running on localhost
   useEffect(() => {
@@ -69,7 +75,65 @@ function DashboardContent() {
       .catch(err => console.error('Failed to load recent projects:', err));
   }, [searchParams]);
 
-  const handleSubmit = async (query: string, files?: File[]) => {
+  // Update agent states based on messages (multi-agent mode)
+  useEffect(() => {
+    if (!multiAgentMode) return;
+
+    // Process all status messages to update agent states
+    messages.forEach((message, idx) => {
+      if (message.type !== 'status') return;
+
+      const statusText = (message.data as any).message || '';
+
+      // Update agent states based on status text
+      setAgentStates(prev => {
+        let updated = [...prev];
+
+        if (statusText.includes('Step 1/4') || statusText.includes('Architect is analyzing')) {
+          updated = updated.map(a =>
+            a.id === 'architect'
+              ? { ...a, status: 'working' as const, output: [...new Set([...a.output, statusText])], startTime: a.startTime || Date.now() }
+              : a.id === 'coder' ? { ...a, status: 'waiting' as const }
+              : a.id === 'tester' ? { ...a, status: 'waiting' as const }
+              : a.id === 'reviewer' ? { ...a, status: 'waiting' as const }
+              : a
+          );
+        } else if (statusText.includes('Architecture plan created') || statusText.includes('✓ Architecture')) {
+          updated = updated.map(a =>
+            a.id === 'architect' ? { ...a, status: 'complete' as const, output: [...new Set([...a.output, '✅ Plan complete'])], endTime: Date.now() } : a
+          );
+        } else if (statusText.includes('Step 2/4') || statusText.includes('Coder is writing')) {
+          updated = updated.map(a =>
+            a.id === 'coder' ? { ...a, status: 'working' as const, output: [...new Set([...a.output, statusText])], startTime: a.startTime || Date.now() } : a
+          );
+        } else if (statusText.includes('Code implementation complete') || statusText.includes('✓ Code')) {
+          updated = updated.map(a =>
+            a.id === 'coder' ? { ...a, status: 'complete' as const, output: [...new Set([...a.output, '✅ Code written'])], endTime: Date.now() } : a
+          );
+        } else if (statusText.includes('Step 3/4') || statusText.includes('Tester is running')) {
+          updated = updated.map(a =>
+            a.id === 'tester' ? { ...a, status: 'working' as const, output: [...new Set([...a.output, statusText])], startTime: a.startTime || Date.now() } : a
+          );
+        } else if (statusText.includes('Tests completed') || statusText.includes('✓ Tests')) {
+          updated = updated.map(a =>
+            a.id === 'tester' ? { ...a, status: 'complete' as const, output: [...new Set([...a.output, '✅ Tests done'])], endTime: Date.now() } : a
+          );
+        } else if (statusText.includes('Step 4/4') || statusText.includes('Reviewer is evaluating')) {
+          updated = updated.map(a =>
+            a.id === 'reviewer' ? { ...a, status: 'working' as const, output: [...new Set([...a.output, statusText])], startTime: a.startTime || Date.now() } : a
+          );
+        } else if (statusText.includes('Workflow complete')) {
+          updated = updated.map(a =>
+            a.id === 'reviewer' ? { ...a, status: 'complete' as const, output: [...new Set([...a.output, '✅ Review complete'])], endTime: Date.now() } : a
+          );
+        }
+
+        return updated;
+      });
+    });
+  }, [messages, multiAgentMode]);
+
+  const handleSubmit = async (query: string, files?: File[], multiAgent?: boolean) => {
     // Add to task history
     const task: Task = {
       id: Date.now().toString(),
@@ -82,8 +146,18 @@ function DashboardContent() {
     setCurrentQuery(query);
     setStartTime(Date.now());
 
-    // Run agent
-    await runAgent(query, files);
+    // Reset agent states if multi-agent mode
+    if (multiAgent) {
+      setAgentStates([
+        { id: 'architect', name: 'Architect', role: 'architect', status: 'idle', output: [] },
+        { id: 'coder', name: 'Coder', role: 'coder', status: 'idle', output: [] },
+        { id: 'tester', name: 'Tester', role: 'tester', status: 'idle', output: [] },
+        { id: 'reviewer', name: 'Reviewer', role: 'reviewer', status: 'idle', output: [] },
+      ]);
+    }
+
+    // Run agent (single or multi-agent mode)
+    await runAgent(query, files, multiAgent);
   };
 
   const handleShareRun = async () => {
@@ -178,7 +252,6 @@ function DashboardContent() {
           tasks={tasks}
           onNewTask={handleNewTask}
           onOpenProject={() => setShowProjectModal(true)}
-          onOpenMultiAgent={() => setShowMultiAgent(true)}
           hasProject={!!currentConfig?.current_project}
           currentConfig={currentConfig}
         />
@@ -193,14 +266,32 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Console */}
-        <AgentConsole
-          messages={messages}
-          onExampleClick={handleExampleClick}
-          onShare={handleShareRun}
-          canShare={messages.some(m => m.type === 'done') && !isRunning}
-          isRunning={isRunning}
-        />
+        {/* Console or Agent Workspace */}
+        {multiAgentMode && (isRunning || agentStates.some(a => a.status !== 'idle')) ? (
+          <div className="flex-1 overflow-y-auto">
+            <AgentWorkspace agents={agentStates} />
+            {/* Show results below workspace when complete */}
+            {!isRunning && messages.some(m => m.type === 'result') && (
+              <div className="border-t border-border">
+                <AgentConsole
+                  messages={messages.filter(m => m.type === 'result' || m.type === 'done')}
+                  onExampleClick={handleExampleClick}
+                  onShare={handleShareRun}
+                  canShare={true}
+                  isRunning={false}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          <AgentConsole
+            messages={messages}
+            onExampleClick={handleExampleClick}
+            onShare={handleShareRun}
+            canShare={messages.some(m => m.type === 'done') && !isRunning}
+            isRunning={isRunning}
+          />
+        )}
 
         {/* Input bar */}
         <InputBar
@@ -208,6 +299,8 @@ function DashboardContent() {
           isRunning={isRunning}
           onStop={stopAgent}
           initialQuery={initialQuery}
+          multiAgentMode={multiAgentMode}
+          onMultiAgentToggle={setMultiAgentMode}
         />
       </div>
 
@@ -238,11 +331,6 @@ function DashboardContent() {
             setProjectChanges([]);
           }}
         />
-      )}
-
-      {/* Multi-Agent Panel */}
-      {showMultiAgent && (
-        <MultiAgentPanel onClose={() => setShowMultiAgent(false)} />
       )}
     </div>
   );

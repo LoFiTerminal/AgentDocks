@@ -1,17 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Zap, X } from 'lucide-react';
+import { Paperclip, Zap, X, Users } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface InputBarProps {
-  onSubmit: (query: string, files?: File[]) => void;
+  onSubmit: (query: string, files?: File[], multiAgent?: boolean) => void;
   isRunning: boolean;
   onStop: () => void;
   initialQuery?: string;
+  multiAgentMode?: boolean;
+  onMultiAgentToggle?: (enabled: boolean) => void;
 }
 
-export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: InputBarProps) => {
+export const InputBar = ({
+  onSubmit,
+  isRunning,
+  onStop,
+  initialQuery = '',
+  multiAgentMode = false,
+  onMultiAgentToggle
+}: InputBarProps) => {
   const [query, setQuery] = useState(initialQuery);
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +46,7 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
     e.preventDefault();
     if (!query.trim() || isRunning) return;
 
-    onSubmit(query, files.length > 0 ? files : undefined);
+    onSubmit(query, files.length > 0 ? files : undefined, multiAgentMode);
     setQuery('');
     setFiles([]);
   };
@@ -81,6 +90,32 @@ export const InputBar = ({ onSubmit, isRunning, onStop, initialQuery = '' }: Inp
 
   return (
     <div className="border-t border-border bg-secondary/20 backdrop-blur-sm">
+      {/* Multi-Agent Toggle */}
+      {onMultiAgentToggle && (
+        <div className="px-6 pt-3 pb-2 border-b border-border/50">
+          <button
+            type="button"
+            onClick={() => onMultiAgentToggle(!multiAgentMode)}
+            disabled={isRunning}
+            className={clsx(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              multiAgentMode
+                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                : 'bg-secondary border border-border hover:border-amber-500/50'
+            )}
+          >
+            <Users className="w-4 h-4" />
+            <span>{multiAgentMode ? 'Multi-Agent Mode' : 'Single Agent'}</span>
+            {multiAgentMode && (
+              <span className="ml-1 text-xs bg-amber-500/30 px-1.5 py-0.5 rounded">
+                4 agents
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* File chips */}
       {files.length > 0 && (
         <div className="px-6 pt-3 flex flex-wrap gap-2">

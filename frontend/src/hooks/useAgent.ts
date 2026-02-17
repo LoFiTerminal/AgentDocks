@@ -16,7 +16,7 @@ export const useAgent = () => {
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const runAgent = useCallback(async (query: string, files?: File[]) => {
+  const runAgent = useCallback(async (query: string, files?: File[], multiAgent?: boolean, workflow: string = 'feature') => {
     setMessages([]);
     setError(null);
     setIsRunning(true);
@@ -36,7 +36,21 @@ export const useAgent = () => {
 
       let response: Response;
 
-      if (files && files.length > 0) {
+      if (multiAgent) {
+        // Multi-agent workflow
+        response = await fetch('/api/multi-agent/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            task: query,
+            workflow: workflow,
+            context: {}
+          }),
+          signal: abortController.signal,
+        });
+      } else if (files && files.length > 0) {
         // Run with files
         const formData = new FormData();
         formData.append('query', query);

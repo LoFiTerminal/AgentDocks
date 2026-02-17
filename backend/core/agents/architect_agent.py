@@ -59,15 +59,23 @@ Output format:
                 "role": "user",
                 "content": f"""Task: {task}
 
-Create an implementation plan for this task.
+Create a CONCRETE implementation plan for this task.
 
-For new code/features:
-1. What needs to be created (functions, classes, etc.)
-2. What the code should do (clear requirements)
-3. How it should be structured
-4. Key implementation steps for the Coder
+Your plan should specify:
+1. WHAT FILES to create (exact filenames)
+2. WHAT CODE to write (functions, classes, structure)
+3. HOW the code should work (logic, algorithms)
+4. Any dependencies or setup needed
 
-Keep it focused and practical. The Coder needs clear direction on what to write.
+Example good plan for "create calculator app":
+- Create calculator.html with HTML structure
+- Include CSS for styling
+- Add JavaScript for calculation logic (add, subtract, multiply, divide functions)
+- Create event handlers for button clicks
+- Display results in output div
+
+Do NOT say "let me check existing code" - assume this is NEW code to be created from scratch.
+Be specific and actionable so the Coder knows exactly what to build.
 
 Current context:
 {self.context}
@@ -104,6 +112,10 @@ Current context:
                     "tool": block.name,
                     "input": block.input
                 })
+
+        # Ensure plan is not empty
+        if not plan_text.strip():
+            plan_text = f"Architecture plan for: {task}\n\n(Plan generation in progress or no detailed plan provided by architect)"
 
         return {
             "plan": plan_text,

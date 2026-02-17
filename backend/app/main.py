@@ -1,6 +1,13 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import health, config, agent, verify, runs, project, multi_agent
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s:     %(name)s - %(message)s'
+)
 
 app = FastAPI(
     title="AgentDocks API",

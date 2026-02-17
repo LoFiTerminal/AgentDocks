@@ -71,20 +71,24 @@ When you receive a plan from the Architect:
                 "role": "user",
                 "content": f"""Task: {task}
 
-{plan_section}Your job is to WRITE CODE to complete this task.
+{plan_section}CRITICAL REQUIREMENT: You MUST write actual code to complete this task. Do NOT just explore or analyze.
 
-If this is a new feature/function:
-1. Write complete, working code
-2. Include all necessary functions
-3. Add comments explaining usage
-4. Make it ready to copy and use
+FOR NEW CODE (like functions, apps, features):
+1. Use the 'write' tool to create a new file with complete, working code
+2. Include all necessary imports and dependencies
+3. Add example usage in comments
+4. The code should be ready to run immediately
 
-If modifying existing code:
-1. Read the existing files first
-2. Make the changes
-3. Test your implementation
+FOR MODIFYING EXISTING CODE:
+1. First use 'read' to check existing files
+2. Then use 'edit' to make changes
+3. Test with 'bash' if needed
 
-Write the actual code now. Don't just explore or plan.
+IMPORTANT: You must actually CREATE FILES using the 'write' tool. Don't just say what you would do - DO IT NOW.
+
+Example:
+- If task is "create hello function", use write tool to create hello.py with the function
+- If task is "build calculator app", use write tool to create calculator.html with full HTML/CSS/JS
 
 Context:
 {self.context}
@@ -110,16 +114,39 @@ Context:
         # Process response and track changes
         files_modified = []
         code_snippets = []
-        
+        code_files = {}  # Store actual code from write/edit tools
+
         for block in response.content:
             if block.type == "text":
                 code_snippets.append(block.text)
             elif block.type == "tool_use":
-                if block.name in ["write", "edit"]:
-                    files_modified.append(block.input.get("path", "unknown"))
+                if block.name == "write":
+                    path = block.input.get("path", "unknown")
+                    content = block.input.get("content", "")
+                    files_modified.append(path)
+                    code_files[path] = content
+                elif block.name == "edit":
+                    path = block.input.get("file_path", "unknown")
+                    files_modified.append(path)
+                    # For edits, we'd need to track the changes
+
+        # Combine text explanations and actual code
+        implementation_parts = []
+        if code_snippets:
+            implementation_parts.extend(code_snippets)
+
+        # Add the actual code files if any were written
+        if code_files:
+            implementation_parts.append("\n=== Generated Code Files ===\n")
+            for path, content in code_files.items():
+                implementation_parts.append(f"\n--- {path} ---\n")
+                implementation_parts.append(content)
+
+        implementation = "\n".join(implementation_parts) if implementation_parts else "No implementation generated"
 
         return {
-            "implementation": "\n".join(code_snippets),
+            "implementation": implementation,
             "files_modified": files_modified,
+            "code_files": code_files,
             "status": "complete"
         }

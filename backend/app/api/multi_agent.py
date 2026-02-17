@@ -3,7 +3,11 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import json
+import asyncio
+import logging
 from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
 
 from models.schemas import (
     MultiAgentRunRequest,
@@ -94,27 +98,83 @@ async def run_multi_agent_workflow(request: MultiAgentRunRequest):
 
     # Stream workflow execution
     async def event_generator():
+        # Create queue for status updates
+        status_queue = asyncio.Queue()
+        workflow_done = asyncio.Event()
+        workflow_result = None
+        workflow_error = None
+
+        # Status callback that puts messages in queue
+        async def status_callback(message: str):
+            await status_queue.put(message)
+
         try:
             # Send initial status
             yield f"data: {json.dumps({'type': 'status', 'data': {'message': f'Starting {request.workflow} workflow...'}})}\n\n"
 
-            # Execute workflow based on type
-            if request.workflow == "feature":
-                result = await orchestrator.execute_feature_workflow(
-                    task=request.task,
-                    context=request.context or {}
-                )
-            elif request.workflow == "debug":
-                result = await orchestrator.execute_debug_workflow(
-                    task=request.task,
-                    context=request.context or {}
-                )
-            else:
-                raise ValueError(f"Unknown workflow type: {request.workflow}")
+            orchestrator.set_status_callback(status_callback)
+
+            # Run workflow in background task
+            async def run_workflow():
+                nonlocal workflow_result, workflow_error
+                try:
+                    if request.workflow == "feature":
+                        workflow_result = await orchestrator.execute_feature_workflow(
+                            task=request.task,
+                            context=request.context or {}
+                        )
+                    elif request.workflow == "debug":
+                        workflow_result = await orchestrator.execute_debug_workflow(
+                            task=request.task,
+                            context=request.context or {}
+                        )
+                    else:
+                        raise ValueError(f"Unknown workflow type: {request.workflow}")
+                except Exception as e:
+                    workflow_error = e
+                finally:
+                    workflow_done.set()
+
+            # Start workflow task
+            workflow_task = asyncio.create_task(run_workflow())
+
+            # Stream status updates as they come
+            while not workflow_done.is_set():
+                try:
+                    # Wait for status message with timeout
+                    message = await asyncio.wait_for(status_queue.get(), timeout=0.5)
+                    yield f"data: {json.dumps({'type': 'status', 'data': {'message': message}})}\n\n"
+                except asyncio.TimeoutError:
+                    # No message yet, continue waiting
+                    continue
+
+            # Drain any remaining messages
+            while not status_queue.empty():
+                message = await status_queue.get()
+                yield f"data: {json.dumps({'type': 'status', 'data': {'message': message}})}\n\n"
+
+            # Wait for workflow to complete
+            await workflow_task
+
+            # Check for errors
+            if workflow_error:
+                raise workflow_error
+
+            # Log result for debugging
+            logger.info(f"📊 API: Final workflow result keys: {list(workflow_result.keys()) if workflow_result else 'None'}")
+            if workflow_result:
+                logger.info(f"📊 API: Result has plan: {'plan' in workflow_result}")
+                logger.info(f"📊 API: Result has implementation: {'implementation' in workflow_result}")
+                logger.info(f"📊 API: Result has test_results: {'test_results' in workflow_result}")
+                logger.info(f"📊 API: Result has review_decision: {'review_decision' in workflow_result}")
+                if 'implementation' in workflow_result:
+                    logger.info(f"📊 API: Implementation preview: {workflow_result['implementation'][:200]}")
 
             # Send completion event
-            yield f"data: {json.dumps({'type': 'result', 'data': result})}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'data': {'success': result.get('success', False)}})}\n\n"
+            logger.info(f"📊 API: Sending result message with {len(str(workflow_result))} chars")
+            yield f"data: {json.dumps({'type': 'result', 'data': workflow_result})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'data': {'success': workflow_result.get('success', False)}})}\n\n"
+            logger.info("📊 API: Result and done messages sent")
 
         except Exception as e:
             error_msg = str(e)
