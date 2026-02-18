@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 
 export interface AgentMessage {
   id: string;
-  type: 'status' | 'tool_use' | 'tool_result' | 'text' | 'file' | 'error' | 'done';
+  type: 'status' | 'tool_use' | 'tool_result' | 'text' | 'file' | 'error' | 'done' | 'result' | 'browser_action' | 'screenshot';
   data: Record<string, unknown>;
   timestamp: number;
 }

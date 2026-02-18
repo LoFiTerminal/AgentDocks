@@ -284,7 +284,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
               className="w-full px-4 py-3 bg-secondary/30 hover:bg-secondary/50 transition-colors flex items-center gap-3"
             >
               <Lightbulb className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-semibold text-blue-400">Architect's Plan</span>
+              <span className="text-sm font-semibold text-blue-400">Architect&apos;s Plan</span>
               <span className="ml-auto text-xs text-muted-foreground">
                 {expandedSections.has('plan') ? '▼' : '▶'}
               </span>
@@ -307,7 +307,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
               className="w-full px-4 py-3 bg-secondary/30 hover:bg-secondary/50 transition-colors flex items-center gap-3"
             >
               <Code className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-amber-400">Coder's Implementation</span>
+              <span className="text-sm font-semibold text-amber-400">Coder&apos;s Implementation</span>
               <span className="ml-auto text-xs text-muted-foreground">
                 {expandedSections.has('implementation') ? '▼' : '▶'}
               </span>
@@ -352,7 +352,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
               className="w-full px-4 py-3 bg-secondary/30 hover:bg-secondary/50 transition-colors flex items-center gap-3"
             >
               <TestTube className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-semibold text-green-400">Tester's Results</span>
+              <span className="text-sm font-semibold text-green-400">Tester&apos;s Results</span>
               <span className="ml-auto text-xs text-muted-foreground">
                 {expandedSections.has('tests') ? '▼' : '▶'}
               </span>
@@ -377,7 +377,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
               className="w-full px-4 py-3 bg-secondary/30 hover:bg-secondary/50 transition-colors flex items-center gap-3"
             >
               <Eye className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-semibold text-purple-400">Reviewer's Decision</span>
+              <span className="text-sm font-semibold text-purple-400">Reviewer&apos;s Decision</span>
               <span className="ml-auto">
                 <span className={clsx(
                   'text-xs font-semibold px-2 py-1 rounded',

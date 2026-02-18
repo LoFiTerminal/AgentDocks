@@ -335,7 +335,7 @@ export function MultiAgentPanel({ onClose }: MultiAgentPanelProps) {
                       <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2 text-xs">
                         <strong>💡 How to use this code:</strong>
                         <ol className="list-decimal list-inside mt-1 space-y-1">
-                          <li>Copy the code below from the "Coder" section</li>
+                          <li>Copy the code below from the &quot;Coder&quot; section</li>
                           <li>Paste it into your project (e.g., calculator.js)</li>
                           <li>Run it in your environment (Node.js, browser console, etc.)</li>
                         </ol>

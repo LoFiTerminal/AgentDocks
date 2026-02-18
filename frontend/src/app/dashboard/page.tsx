@@ -87,7 +87,7 @@ function DashboardContent() {
 
       // Update agent states based on status text
       setAgentStates(prev => {
-        let updated = [...prev];
+        let updated: any[] = [...prev];
 
         if (statusText.includes('Step 1/4') || statusText.includes('Architect is analyzing')) {
           updated = updated.map(a =>
