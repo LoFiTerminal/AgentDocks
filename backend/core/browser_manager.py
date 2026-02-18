@@ -115,7 +115,16 @@ class BrowserManager:
             )
 
             # Parse result from stdout
-            result_data = json.loads(stdout)
+            # Log for debugging
+            if stdout.strip():
+                logger.debug(f"Browser stdout (first 500 chars): {stdout[:500]}")
+            if stderr.strip():
+                logger.warning(f"Browser stderr: {stderr}")
+
+            # Try to parse just the first line if there's extra output
+            stdout_lines = stdout.strip().split('\n')
+            json_output = stdout_lines[0] if stdout_lines else stdout
+            result_data = json.loads(json_output)
 
             # If screenshot was taken, read and encode it
             if result_data.get("screenshot_path"):
@@ -134,6 +143,7 @@ class BrowserManager:
             }
         except json.JSONDecodeError as e:
             logger.error(f"❌ Failed to parse browser action result: {e}")
+            logger.error(f"Stdout was: {stdout[:1000]}")  # Log first 1000 chars
             return {
                 "success": False,
                 "error": f"Failed to parse result: {str(e)}"
@@ -164,7 +174,12 @@ class BrowserManager:
 import asyncio
 import json
 import sys
+import warnings
 from pathlib import Path
+
+# Suppress all warnings to ensure clean JSON output
+warnings.filterwarnings('ignore')
+
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
 
 # Global browser and page
