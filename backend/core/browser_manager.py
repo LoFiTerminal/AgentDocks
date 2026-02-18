@@ -192,19 +192,11 @@ async def init_browser():
         return
 
     _playwright = await async_playwright().start()
+    # Simple browser launch - matching what works in bash tests
     _browser = await _playwright.chromium.launch(
-        headless=True,
-        args=[
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-blink-features=AutomationControlled'
-        ]
+        args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     )
-    _page = await _browser.new_page(
-        viewport={'width': 1280, 'height': 720},
-        user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    )
+    _page = await _browser.new_page(viewport={'width': 1280, 'height': 720})
 
 
 async def close_browser():
@@ -235,14 +227,10 @@ async def execute_action(args):
     try:
         if action == 'navigate':
             url = args['url']
-            # Wait for page load
-            try:
-                await _page.goto(url, wait_until='load', timeout=timeout)
-            except:
-                # Fallback if load times out
-                await _page.goto(url, wait_until='domcontentloaded', timeout=timeout)
-            # Give page extra time to render JavaScript
-            await asyncio.sleep(2)
+            # Simple navigation - just like manual tests that work
+            await _page.goto(url, timeout=timeout)
+            # Wait for page to load
+            await _page.wait_for_load_state('networkidle', timeout=timeout)
             return {'success': True, 'url': url, 'title': await _page.title()}
 
         elif action == 'click':
@@ -257,12 +245,12 @@ async def execute_action(args):
             return {'success': True, 'selector': selector, 'text': text}
 
         elif action == 'screenshot':
-            full_page = args.get('full_page', False)
-            # Wait a moment for page to fully render
-            await asyncio.sleep(0.5)
+            full_page = args.get('full_page', True)  # Default to full page
             screenshot_path = f"/tmp/screenshots/screenshot_{asyncio.get_event_loop().time()}.png"
             Path(screenshot_path).parent.mkdir(parents=True, exist_ok=True)
-            await _page.screenshot(path=screenshot_path, full_page=full_page, timeout=timeout)
+
+            # Take screenshot - simple like manual tests
+            await _page.screenshot(path=screenshot_path, full_page=full_page)
 
             # Read and base64 encode the screenshot
             with open(screenshot_path, 'rb') as f:
