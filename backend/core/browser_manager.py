@@ -194,9 +194,17 @@ async def init_browser():
     _playwright = await async_playwright().start()
     _browser = await _playwright.chromium.launch(
         headless=True,
-        args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args=[
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-blink-features=AutomationControlled'
+        ]
     )
-    _page = await _browser.new_page(viewport={'width': 1280, 'height': 720})
+    _page = await _browser.new_page(
+        viewport={'width': 1280, 'height': 720},
+        user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    )
 
 
 async def close_browser():
@@ -227,11 +235,15 @@ async def execute_action(args):
     try:
         if action == 'navigate':
             url = args['url']
-            # Wait for network to be idle for better page rendering
-            await _page.goto(url, wait_until='networkidle', timeout=timeout)
-            # Give page extra time to render
-            await asyncio.sleep(1)
-            return {'success': True, 'url': url}
+            # Wait for page load
+            try:
+                await _page.goto(url, wait_until='load', timeout=timeout)
+            except:
+                # Fallback if load times out
+                await _page.goto(url, wait_until='domcontentloaded', timeout=timeout)
+            # Give page extra time to render JavaScript
+            await asyncio.sleep(2)
+            return {'success': True, 'url': url, 'title': await _page.title()}
 
         elif action == 'click':
             selector = args['selector']
