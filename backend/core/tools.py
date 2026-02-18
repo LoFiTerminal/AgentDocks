@@ -120,7 +120,7 @@ TOOLS = [
                 },
                 "url": {
                     "type": "string",
-                    "description": "URL to navigate to (required for 'navigate' action)"
+                    "description": "URL to navigate to (required for 'navigate', optional for 'screenshot' to navigate first)"
                 },
                 "selector": {
                     "type": "string",

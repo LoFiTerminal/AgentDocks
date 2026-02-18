@@ -245,18 +245,34 @@ async def execute_action(args):
             return {'success': True, 'selector': selector, 'text': text}
 
         elif action == 'screenshot':
-            full_page = args.get('full_page', True)  # Default to full page
+            full_page = args.get('full_page', True)
+            url = args.get('url')  # Optional URL to navigate to first
+
+            # If URL provided, navigate first (all-in-one like manual tests)
+            if url:
+                await _page.goto(url, timeout=timeout)
+                await _page.wait_for_load_state('networkidle', timeout=timeout)
+
             screenshot_path = f"/tmp/screenshots/screenshot_{asyncio.get_event_loop().time()}.png"
             Path(screenshot_path).parent.mkdir(parents=True, exist_ok=True)
 
-            # Take screenshot - simple like manual tests
+            # Take screenshot
             await _page.screenshot(path=screenshot_path, full_page=full_page)
 
-            # Read and base64 encode the screenshot
+            # Read and base64 encode
             with open(screenshot_path, 'rb') as f:
                 screenshot_data = base64.b64encode(f.read()).decode('utf-8')
 
-            return {'success': True, 'screenshot_path': screenshot_path, 'screenshot_data': screenshot_data}
+            # Return with page info for debugging
+            page_url = _page.url
+            page_title = await _page.title()
+            return {
+                'success': True,
+                'screenshot_path': screenshot_path,
+                'screenshot_data': screenshot_data,
+                'page_url': page_url,
+                'page_title': page_title
+            }
 
         elif action == 'extract':
             selector = args['selector']
