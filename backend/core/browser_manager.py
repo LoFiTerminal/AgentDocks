@@ -9,6 +9,7 @@ import asyncio
 import base64
 import json
 import logging
+import shlex
 from typing import Dict, Any, Optional
 from pathlib import Path
 
@@ -101,14 +102,13 @@ class BrowserManager:
 
         # Encode arguments as JSON
         args_json = json.dumps(command_args)
-        args_json_escaped = args_json.replace('"', '\\"').replace("'", "\\'")
 
         # Execute browser control script
         logger.info(f"🌐 Executing browser action: {action}")
 
         try:
-            # Run with timeout protection
-            command = f'python3 {self.browser_script_path} \'{args_json_escaped}\''
+            # Run with timeout protection - use shlex.quote for proper escaping
+            command = f'python3 {self.browser_script_path} {shlex.quote(args_json)}'
             stdout, stderr, exit_code = await asyncio.wait_for(
                 self.sandbox.execute_bash(command),
                 timeout=timeout / 1000 + 5  # Add 5s buffer
