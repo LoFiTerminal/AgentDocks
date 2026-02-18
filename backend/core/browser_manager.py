@@ -227,7 +227,10 @@ async def execute_action(args):
     try:
         if action == 'navigate':
             url = args['url']
-            await _page.goto(url, wait_until='domcontentloaded', timeout=timeout)
+            # Wait for network to be idle for better page rendering
+            await _page.goto(url, wait_until='networkidle', timeout=timeout)
+            # Give page extra time to render
+            await asyncio.sleep(1)
             return {'success': True, 'url': url}
 
         elif action == 'click':
@@ -243,6 +246,8 @@ async def execute_action(args):
 
         elif action == 'screenshot':
             full_page = args.get('full_page', False)
+            # Wait a moment for page to fully render
+            await asyncio.sleep(0.5)
             screenshot_path = f"/tmp/screenshots/screenshot_{asyncio.get_event_loop().time()}.png"
             Path(screenshot_path).parent.mkdir(parents=True, exist_ok=True)
             await _page.screenshot(path=screenshot_path, full_page=full_page, timeout=timeout)
