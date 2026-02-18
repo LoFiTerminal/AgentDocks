@@ -117,14 +117,22 @@ class E2BSandbox(BaseSandbox):
         return stdout, stderr, exit_code
 
     async def _ensure_playwright_installed(self):
-        """Ensure Playwright is installed in the E2B sandbox."""
+        """Ensure Playwright is installed in the E2B sandbox with all dependencies."""
         if self._playwright_installed:
             return
+
+        # Install system dependencies for Chromium
+        await self.execute_bash(
+            "apt-get update -qq && apt-get install -y -qq libnspr4 libnss3 libatk1.0-0 "
+            "libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 "
+            "libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 2>/dev/null"
+        )
 
         # Install playwright and chromium
         await self.execute_bash(
             "pip install playwright && python -m playwright install chromium"
         )
+
         self._playwright_installed = True
 
     async def write_file(self, path: str, content: str) -> bool:
