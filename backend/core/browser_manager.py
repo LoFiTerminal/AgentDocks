@@ -126,12 +126,7 @@ class BrowserManager:
             json_output = stdout_lines[0] if stdout_lines else stdout
             result_data = json.loads(json_output)
 
-            # If screenshot was taken, read and encode it
-            if result_data.get("screenshot_path"):
-                screenshot_path = result_data["screenshot_path"]
-                screenshot_content = await self.sandbox.read_file(screenshot_path)
-                result_data["screenshot_data"] = base64.b64encode(screenshot_content).decode('utf-8')
-
+            # Screenshot data is now included in the JSON response from the script
             logger.info(f"✅ Browser action completed: {action}")
             return result_data
 
@@ -172,6 +167,7 @@ class BrowserManager:
         """Generate the Python browser control script that runs in the sandbox."""
         return """#!/usr/bin/env python3
 import asyncio
+import base64
 import json
 import sys
 import warnings
@@ -250,7 +246,12 @@ async def execute_action(args):
             screenshot_path = f"/tmp/screenshots/screenshot_{asyncio.get_event_loop().time()}.png"
             Path(screenshot_path).parent.mkdir(parents=True, exist_ok=True)
             await _page.screenshot(path=screenshot_path, full_page=full_page, timeout=timeout)
-            return {'success': True, 'screenshot_path': screenshot_path}
+
+            # Read and base64 encode the screenshot
+            with open(screenshot_path, 'rb') as f:
+                screenshot_data = base64.b64encode(f.read()).decode('utf-8')
+
+            return {'success': True, 'screenshot_path': screenshot_path, 'screenshot_data': screenshot_data}
 
         elif action == 'extract':
             selector = args['selector']
