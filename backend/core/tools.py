@@ -137,7 +137,7 @@ TOOLS = [
                 "full_page": {
                     "type": "boolean",
                     "description": "Capture full page screenshot (optional for 'screenshot' action, default: false)",
-                    "default": false
+                    "default": False
                 },
                 "timeout": {
                     "type": "integer",
