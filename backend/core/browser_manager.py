@@ -109,13 +109,13 @@ class BrowserManager:
         try:
             # Run with timeout protection
             command = f'python3 {self.browser_script_path} \'{args_json_escaped}\''
-            result = await asyncio.wait_for(
+            stdout, stderr, exit_code = await asyncio.wait_for(
                 self.sandbox.execute_bash(command),
                 timeout=timeout / 1000 + 5  # Add 5s buffer
             )
 
-            # Parse result
-            result_data = json.loads(result)
+            # Parse result from stdout
+            result_data = json.loads(stdout)
 
             # If screenshot was taken, read and encode it
             if result_data.get("screenshot_path"):
