@@ -115,18 +115,28 @@ class BrowserManager:
             )
 
             # Parse result from stdout
-            # Log for debugging
+            logger.info(f"📊 Browser command: {command}")
+            logger.info(f"📊 Browser stdout length: {len(stdout)}")
+            logger.info(f"📊 Browser stderr length: {len(stderr)}")
+
             if stdout.strip():
-                logger.debug(f"Browser stdout (first 500 chars): {stdout[:500]}")
+                logger.info(f"📊 Browser stdout (first 500 chars): {stdout[:500]}")
             if stderr.strip():
-                logger.warning(f"Browser stderr: {stderr}")
+                logger.warning(f"⚠️ Browser stderr: {stderr}")
 
             # Try to parse just the first line if there's extra output
             stdout_lines = stdout.strip().split('\n')
             json_output = stdout_lines[0] if stdout_lines else stdout
             result_data = json.loads(json_output)
 
-            # Screenshot data is now included in the JSON response from the script
+            # Log screenshot details if present
+            if result_data.get('screenshot_data'):
+                data_len = len(result_data['screenshot_data'])
+                logger.info(f"📸 Screenshot data length: {data_len} chars (base64)")
+                logger.info(f"📸 Screenshot file: {result_data.get('screenshot_path')}")
+                logger.info(f"📸 Page URL: {result_data.get('page_url')}")
+                logger.info(f"📸 Page title: {result_data.get('page_title')}")
+
             logger.info(f"✅ Browser action completed: {action}")
             return result_data
 
